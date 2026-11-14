@@ -317,19 +317,19 @@ All tables, generated from the raw data: [`results/results_tables.md`](results/r
 ```
 QEC_Edge_Lab_submission/
 ├── README.md                 this file
-├── make_export.sh            refreshes code/ from the working app folders (never copies the API key)
 ├── code/
-│   ├── qec_lab/              the main App Lab app
-│   │   ├── python/           main.py (app), qec_common.py (graph, error model, run storage), qec_ai.py (AI decoder),
-│   │   │                     requirements.txt, ibm_config.example.json
-│   │   ├── sketch/           sketch.ino, qec_decoders.h (decoders), qec_rt.h (real-time replay), qec_ai.h (AI inference)
-│   │   ├── assets/           web dashboard (index.html, app.js, style.css, libs/)
-│   │   └── tools/            qec_offline.py (laptop: full statistics + PyMatching)
-│   └── quantum_music/        earlier experiment: knob-controlled 5-qubit phase-estimation synth with dashboard
+│   └── qec_lab/              the main App Lab app
+│       ├── python/           main.py (app), qec_common.py (graph, error model, run storage), qec_ai.py (AI decoder),
+│       │                     requirements.txt, ibm_config.example.json
+│       ├── sketch/           sketch.ino, qec_decoders.h (decoders), qec_rt.h (real-time replay), qec_ai.h (AI inference)
+│       ├── assets/           web dashboard (index.html, app.js, style.css, libs/)
+│       └── tools/            qec_offline.py (laptop: full statistics + PyMatching), export_web_demo.py (web demo data)
 ├── data/ibm_runs/            raw shots of the IBM runs (.npz + .json), board results, offline CSVs
 ├── results/results_tables.md all result tables, generated from data/
-├── docs/                     demo script, submission checklist, background notes
-└── media/                    architecture diagram, results chart, shot list for photos/video
+├── docs/                     GitHub Pages site: interactive web demo (docs/demo/)
+├── media/                    architecture diagram, error-correction diagram, results charts
+├── presentation/             slides (LaTeX source + PDF) and their figures
+└── qec_lab_import.zip        the app, ready to import into Arduino App Lab
 ```
 
 ## Build and run
