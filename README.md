@@ -142,7 +142,7 @@ a stored 1 fades into a 0 far more often than the reverse. Atoms and ions have d
 atom can simply disappear, which the hardware can detect [11][13]. A decoder trained on the device's own data, as
 ours is, adapts to whatever the dominant quirk is, without hand-written rules.
 
-**What we have not shown yet (honest limits):**
+**What we have not shown yet:**
 
 - We have not run on an ion or atom machine. Our measured data come from IBM's superconducting chips.
 - Those machines mostly use 2-D codes (surface and colour codes); our decoders handle the 1-D repetition code and
