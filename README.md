@@ -13,10 +13,10 @@ technical details for experts are at the end.
 
 ## In 30 seconds
 
-- 🧪 **Real quantum hardware:** the Arduino sends experiments to IBM's 156-qubit quantum computers over the internet (free account).
-- 🔧 **The Arduino fixes the errors:** its small real-time processor works out which quantum bits went wrong, and measures exactly how long that takes.
-- 🧠 **Edge AI:** a small neural network trained *on the Arduino* learns the personality of each quantum chip and makes **up to 9× fewer mistakes** (typically 2–3×) than the best classical method.
-- 🎛️ **You can feel the limit:** turn a knob to speed up the stream of errors; the LED matrix fills up and a buzzer growls when the Arduino can no longer keep up.
+- **Real quantum hardware:** the Arduino sends experiments to IBM's 156-qubit quantum computers over the internet (free account).
+- **The Arduino fixes the errors:** its small real-time processor works out which quantum bits went wrong, and measures exactly how long that takes.
+- **Edge AI:** a small neural network trained *on the Arduino* learns the personality of each quantum chip and makes **up to 9× fewer mistakes** (typically 2–3×) than the best classical method.
+- **You can feel the limit:** turn a knob to speed up the stream of errors; the LED matrix fills up and a buzzer growls when the Arduino can no longer keep up.
 
 ---
 
