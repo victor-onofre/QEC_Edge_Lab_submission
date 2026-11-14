@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QEC Edge Lab · Interactive demo</title>
+<meta name="description" content="Interactive web twin of QEC Edge Lab: real IBM quantum computer data decoded by an Arduino UNO Q, with an on-device AI decoder.">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="brand"><div class="logo" aria-hidden="true">Q</div><span>QEC Edge Lab</span></div>
+    <h1>A €60 Arduino that corrects errors from <span class="grad">real quantum computers</span></h1>
+    <p class="lede">Quantum bits flip by accident all the time. A fast classical program, the <b>decoder</b>, reads clues
+      and works out what went wrong. We built one on an Arduino UNO Q, with an AI that learns each chip's own
+      mistakes. Try the three parts below; no hardware or physics needed.</p>
+    <div class="badges">
+      <span class="badge"><i class="dot ok"></i>Real shots from IBM ibm_marrakesh and ibm_fez (156 qubits)</span>
+      <span class="badge"><i class="dot hw"></i>Decoder outputs and timings measured on the Arduino UNO Q</span>
+      <span class="badge"><i class="dot warm"></i>Web twin: replays real data, no board needed</span>
+    </div>
+    <nav class="jump">
+      <a href="#play">1 · Be the decoder</a><a href="#results">2 · Results on real chips</a><a href="#realtime">3 · Turn the knob</a>
+      <a class="ext" href="https://github.com/victor-onofre/QEC_Edge_Lab_submission">Code and full write-up ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 1. Shot game ------------------------------------------------------------------------------------------- -->
+  <section id="play" class="card">
+    <div class="card-head">
+      <div><p class="kicker">Part 1</p><h2>Be the decoder: was a 0 or a 1 stored?</h2></div>
+      <div class="controls">
+        <label>Chip <select id="shotRun"></select></label>
+        <label>Qubits <select id="shotD"></select></label>
+      </div>
+    </div>
+    <p class="explain">IBM's chip stored one bit, <b>0 or 1</b>, copied onto a line of data qubits (circles). Helper
+      checks (squares) kept asking "are my two neighbours still the same?" three times. A <b class="red">red</b> check
+      means its answer <i>changed</i>: a clue that a neighbour flipped around then. At the end all data qubits are read
+      (bottom row). Some of them flipped by accident. Can you tell what was stored?</p>
+    <div class="shot-layout">
+      <div class="shot-box"><svg id="shotSvg" role="img" aria-label="Diagram of one real shot"></svg>
+        <p class="shot-meta" id="shotMeta"></p></div>
+      <div class="shot-side">
+        <div class="guess" id="guessBox">
+          <p class="q">Your answer:</p>
+          <div class="btnrow"><button class="big" data-guess="0">Stored 0</button><button class="big" data-guess="1">Stored 1</button></div>
+        </div>
+        <div class="verdicts" id="verdicts" hidden>
+          <p class="truth" id="truthLine"></p>
+          <ul>
+            <li id="vYou"></li><li id="vMaj"></li><li id="vUf"></li><li id="vAi"></li>
+          </ul>
+          <p class="why" id="whyLine"></p>
+        </div>
+        <div class="btnrow">
+          <button id="nextShot">New random shot</button>
+          <button id="trickyShot" class="ghost">Show a tricky shot</button>
+        </div>
+        <table class="score" aria-label="Score">
+          <thead><tr><th></th><th>Correct</th><th>Played</th></tr></thead>
+          <tbody>
+            <tr><td>You</td><td id="sYou">0</td><td rowspan="4" id="sN">0</td></tr>
+            <tr><td><i class="sw maj"></i>Majority vote</td><td id="sMaj">0</td></tr>
+            <tr><td><i class="sw ufw"></i>Union-find (classical)</td><td id="sUf">0</td></tr>
+            <tr><td><i class="sw ai"></i>AI decoder</td><td id="sAi">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="note" id="shotNote"></p>
+  </section>
+
+  <!-- 2. Results ---------------------------------------------------------------------------------------------- -->
+  <section id="results" class="card">
+    <div class="card-head">
+      <div><p class="kicker">Part 2</p><h2>More qubits, fewer mistakes, and the AI makes the fewest</h2></div>
+      <div class="controls"><label>IBM run <select id="resRun"></select></label></div>
+    </div>
+    <div class="res-layout">
+      <div class="chart-box">
+        <svg id="resSvg" role="img" aria-label="Logical error rate versus number of qubits"></svg>
+        <div class="legend" id="resLegend"></div>
+      </div>
+      <div class="res-side">
+        <p class="explain">Each point is the share of <b>4,000 real shots</b> a decoder got wrong. Lines going down
+          mean error correction works: spreading one bit over more qubits makes the answer more reliable. Hover or tap
+          a point for the number.</p>
+        <div class="callout" id="resCallout"></div>
+        <p class="note">Classical reference: PyMatching, the matching decoder used by researchers, run on a laptop
+          with an error model learned from the data (the better of two models is shown). Union-find and the AI ran on the Arduino. The AI is only ever
+          scored on shots it did not train on. "0 errors" means fewer than 1 in 4,000 and is drawn at the bottom.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Real time ---------------------------------------------------------------------------------------------- -->
+  <section id="realtime" class="card">
+    <div class="card-head">
+      <div><p class="kicker">Part 3</p><h2>Turn the knob: can the Arduino keep up?</h2></div>
+      <div class="controls">
+        <label>Decoder <select id="rtDec"></select></label>
+        <button id="soundBtn" class="ghost" aria-pressed="false">Sound off</button>
+      </div>
+    </div>
+    <p class="explain">A real quantum computer produces a new round of clues every few microseconds, forever. The decoder
+      must finish each shot before the next ones pile up, like a cashier with a queue. On the board, the Modulino
+      Knob sets how fast clues arrive; here you can turn it with the mouse, a finger or the arrow keys.</p>
+    <div class="rt-layout">
+      <div class="knob-box">
+        <div id="knob" class="knob" role="slider" tabindex="0" aria-label="Round time" aria-valuemin="0" aria-valuemax="1000">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="50" class="knob-ring"/>
+            <path id="knobArc" class="knob-arc" d=""/>
+            <circle cx="60" cy="60" r="38" class="knob-body"/>
+            <line id="knobTick" x1="60" y1="60" x2="60" y2="28" class="knob-tick"/>
+          </svg>
+        </div>
+        <div class="tau"><span id="tauVal">20 µs</span><small>per round of clues</small></div>
+        <input id="tauRange" type="range" min="0" max="1000" value="500" aria-label="Round time slider">
+        <div class="presets">
+          <button data-tau="1">IBM chips ~1 µs</button>
+          <button data-tau="1000">Atoms / ions ~1 ms</button>
+        </div>
+      </div>
+      <div class="board">
+        <div class="matrix-frame">
+          <div class="matrix" id="matrix" aria-label="LED matrix showing the queue"></div>
+          <p class="mlabel">8×13 LED matrix: height = shots waiting (log scale, like the real board)</p>
+        </div>
+        <div id="rtStatus" class="status ok">Keeping up</div>
+        <div class="stats">
+          <div><small>Decoder busy</small><b id="stBusy">–</b></div>
+          <div><small>Shots waiting</small><b id="stBacklog">–</b></div>
+          <div><small>Mean latency</small><b id="stLat">–</b></div>
+        </div>
+        <div class="scale">
+          <div class="scale-bar" id="scaleBar"><span id="scaleLimit" class="limit"></span><span id="scaleNow" class="now"></span></div>
+          <div class="scale-labels"><span>1 µs</span><span>10 µs</span><span>100 µs</span><span>1 ms</span></div>
+        </div>
+        <p class="measured" id="measured"></p>
+        <button id="clearBtn" class="ghost small">Clear the queue</button>
+      </div>
+    </div>
+    <p class="note">How this twin works: real shots arrive every 3 rounds × τ, and each takes the <b>mean decode time
+      measured on the STM32</b> (ibm_marrakesh, distance 5, 3 rounds, interrupts on), with ±12% random variation.
+      The real board replays thousands of real shots from its own memory and times every decode with its cycle counter.
+      IBM's superconducting chips need about 1 µs per round, too fast for a microcontroller. Neutral-atom and
+      trapped-ion machines take about 1 ms per round, about 100× more time than the Arduino needs.</p>
+  </section>
+
+  <footer>
+    <p>QEC Edge Lab, Junction Finland 2026 · Arduino UNO Q, Modulino Knob and Buzzer, IBM Quantum (free plan).
+      All numbers on this page come from real runs; see the
+      <a href="https://github.com/victor-onofre/QEC_Edge_Lab_submission">repository</a> for code, raw data and how to run it
+      on the board. Generated by <code>code/qec_lab/tools/export_web_demo.py</code>.</p>
+  </footer>
+</main>
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

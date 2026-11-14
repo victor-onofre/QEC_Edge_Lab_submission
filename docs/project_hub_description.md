@@ -74,6 +74,10 @@ Software
 - IBM Quantum (free Open Plan), Qiskit
 - numpy (AI training on the board)
 
+Interactive demo (no hardware needed)
+https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/
+A web twin of the dashboard: be the decoder on real IBM shots, compare decoders on real chips, and turn a virtual knob to see when the Arduino falls behind. It replays real IBM data and the timings measured on the Arduino.
+
 Code and full results
 https://github.com/victor-onofre/QEC_Edge_Lab_submission
 (Import qec_lab_import.zip into Arduino App Lab, add your IBM key to python/ibm_config.json, connect the Knob and Buzzer, and run.)

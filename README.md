@@ -6,6 +6,8 @@
 > on the fly. We built that "error fixer" on an Arduino UNO Q, tested it on real IBM quantum computers, and taught it
 > with on-device AI to fix errors up to 9.5× better than the standard method.
 
+**Try it in your browser: [interactive demo](https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/)**: be the decoder on real IBM shots, compare decoders on real chips, and turn a virtual knob to see when the Arduino falls behind (a web twin that replays real data and the Arduino's measured timings).
+
 **No quantum background needed to read this page.** The first part explains everything in plain words; the
 technical details for experts are at the end.
 
