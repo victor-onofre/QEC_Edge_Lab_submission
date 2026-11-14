@@ -102,10 +102,10 @@
         <table>
           <thead>
             <tr><th>d</th><th>qubits</th><th>p data |0⟩ / |1⟩</th><th>p meas</th><th>defects</th>
-              <th>majority*</th><th>UF fast</th><th>UF weighted</th><th>PyMatching*</th>
-              <th>cyc naive</th><th>cyc fast</th><th>cyc weighted</th><th>budget</th><th>checks</th></tr>
+              <th>majority*</th><th>UF fast</th><th>UF weighted</th><th>AI</th><th>PyMatching*</th>
+              <th>cyc naive</th><th>cyc fast</th><th>cyc weighted</th><th>cyc AI</th><th>budget</th><th>checks</th></tr>
           </thead>
-          <tbody id="tbody"><tr><td colspan="14" class="empty">Run an experiment or re-decode a saved run</td></tr></tbody>
+          <tbody id="tbody"><tr><td colspan="16" class="empty">Run an experiment or re-decode a saved run</td></tr></tbody>
         </table>
       </div>
       <p class="note" id="layoutNote">* = all shots, decoded on the Linux side.</p>
@@ -135,6 +135,7 @@
         <label class="chk"><input type="checkbox" value="uf_weighted" checked /> UF weighted</label>
         <label class="chk"><input type="checkbox" value="uf_naive" checked /> UF naive</label>
         <label class="chk"><input type="checkbox" value="majority" /> majority</label>
+        <label class="chk"><input type="checkbox" value="ai" checked /> AI (neural net)</label>
       </div>
       <div class="row2">
         <label>τ min (ns) <input id="rtTmin" type="number" value="100" /></label>
@@ -152,7 +153,7 @@
     <section class="card span-4">
       <div class="card-head"><h2>3 · Live mode</h2><span class="hint" id="rtKnob">knob or slider sets τ</span></div>
       <div class="row2">
-        <label>Decoder <select id="rtLiveDec" size="1"><option value="uf_fast">UF fast</option><option value="uf_weighted">UF weighted</option><option value="uf_naive">UF naive</option><option value="majority">majority</option></select></label>
+        <label>Decoder <select id="rtLiveDec" size="1"><option value="uf_fast">UF fast</option><option value="uf_weighted">UF weighted</option><option value="uf_naive">UF naive</option><option value="majority">majority</option><option value="ai">AI (neural net)</option></select></label>
         <label>τ <span class="val" id="rtTauVal">2.00 µs</span><input id="rtTau" type="range" min="0" max="100" value="55" /></label>
       </div>
       <div class="liveread">

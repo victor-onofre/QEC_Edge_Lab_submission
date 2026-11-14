@@ -171,3 +171,10 @@ main[hidden] { display: none !important; }
 .c-livebar.ok { fill: var(--ok); opacity: .75; } .c-livebar.bad { fill: var(--bad); }
 .naivetxt { color: var(--naive); } .gretxt { color: var(--gre); }
 @media (max-width: 560px) { .tabs { padding: 0 16px; } .liveread { grid-template-columns: 1fr; } }
+
+/* ---- AI decoder ---- */
+:root { --ai: #f472b6; }
+@media (prefers-color-scheme: light) { :root { --ai: #db2777; } }
+.c-line.ai { stroke: var(--ai); stroke-width: 2.5; } .c-pt.ai { fill: var(--ai); } .c-pt.hollow.ai { fill: var(--surface); stroke: var(--ai); }
+.c-err.ai { stroke: var(--ai); } .dot.ai { background: var(--ai); } .c-limit.ai { stroke: var(--ai); }
+.aitxt { color: var(--ai); font-weight: 600; }

@@ -3,7 +3,7 @@
 **Junction Finland 2026 · Best use of Arduino UNO Q** · tags: Junction Finland 2026, Arduino UNO Q, Modulino, Edge AI, Quantum computing
 
 The Arduino UNO Q runs error-correction codes on IBM quantum computers, decodes the errors on its own
-microcontroller, learns each chip's quirks with an on-device AI decoder, and shows with a knob, lights and
+microcontroller, learns each chip's quirks with an on-device AI decoder (up to 9.5× fewer logical errors than the best classical decoder), and shows with a knob, lights and
 sound where real-time decoding breaks.
 
 Live write-up (editable, with diagram and chart): https://claude.ai/artifact/RcepXDPrf9ZojUqimkgxvN
@@ -70,14 +70,35 @@ union-find decoder. Full tables: [`results/results_tables.md`](results/results_t
 
 ## Edge AI: a decoder that learns each chip
 
-*In progress — numbers to be added after testing on the board.*
+A small neural network learns each chip's real noise on the board and decodes on the STM32. On ibm_marrakesh it
+makes **1.7–9.5× fewer logical errors than the best graph decoder** (d = 3–11).
 
-- **Training on the board:** the Linux side trains a small model in numpy from the saved IBM syndromes of the chip in use.
-- **Inference on the microcontroller:** weights are sent to the STM32 over Bridge; the model runs there as one more
-  decoder, timed by the cycle counter and usable in the real-time backlog test.
-- **Why:** hand-built decoders need a hand-built noise model. The AI decoder can learn a chip's quirks by itself
-  (|1⟩ decaying 10–16× faster; a qubit flipping 31% of the time).
-- **Honest test:** trained and scored on separate shots, compared with majority vote, union-find and PyMatching.
+- **Training on the board:** the Linux side trains a 1-hidden-layer network (detection events + final data bits →
+  32 ReLU units → 1 output, 400–4,000 parameters) in pure numpy on held-out shots, in about 0.2 s per model on a laptop.
+- **Inference on the microcontroller:** weights are quantised to 15-bit integers and sent over Bridge (a d=5 model
+  is 47 calls, ~0.2 s, verified by a checksum). The STM32 runs it in integer arithmetic, **bit-exact with Python on
+  every shot tested**, as decoder #6 in the accuracy comparison and in the real-time backlog sweep. About 8.5 KB RAM.
+- **Why it wins:** on IBM hardware a |1⟩ decays (T1) far more often than a |0⟩ flips. The network learns this
+  asymmetric noise from the data; matching and union-find cannot represent it. A control network given only the
+  detection events does worse than union-find, so the gain comes from learning the device's real noise.
+- **Where it loses:** on ibm_fez at d ≥ 11 it has an error floor of 0.2–0.4% (too few training shots for ~120
+  inputs), while graph decoders reach < 0.075%.
+- **Honest test:** trained and scored on separate shots (2-fold cross-fitting). The prepared state is only the
+  training label, never an input. This works because both logical states are equally likely in the experiment.
+
+| ibm_marrakesh, d | Best graph decoder | AI decoder |
+|---|---|---|
+| 3 | 10.6% (PyMatching weighted) | **6.3%** |
+| 5 | 3.6% (PyMatching, mixed weights) | **1.8%** |
+| 7 | 1.7% (PyMatching weighted) | **0.22%** |
+| 9 | 0.47% (PyMatching weighted) | **0.05%** |
+
+Full tables for all runs: [`results/results_tables.md`](results/results_tables.md), section 5. STM32 cycles per AI
+decode are measured on the board (DWT counter) and shown on the dashboard; laptop estimate ≈ 6 µs at d=5.
+
+Libraries considered: TensorFlow Lite Micro (reported compile failures on the UNO Q core), Edge Impulse (supports
+the UNO Q but needs a Studio/west build), emlearn (needs scikit-learn/Keras for training). A hand-written C MLP whose
+first layer is additions only (inputs are bits) was the simplest robust choice.
 
 ## Repository layout
 

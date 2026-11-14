@@ -6,6 +6,9 @@ For every saved run it decodes ALL shots with:
   * the board's own C decoders (union-find uniform / weighted), compiled here from
     ../sketch/qec_decoders.h, so the numbers are exactly what the STM32 would compute
   * PyMatching (minimum-weight perfect matching) uniform and weighted  - the reference
+    (pm_weighted: weights per logical state, like the board; pm_w_mixed: one model for both states)
+  * the AI decoder (python/qec_ai.py, a small neural network) - cross-fitted on two halves of the
+    shots (both states mixed, label never an input), inference run with the board's C code (qec_ai.h)
 
 Usage:
   pip install numpy pymatching
@@ -14,13 +17,14 @@ Usage:
   python3 tools/qec_offline.py ./runs <run-name> # one run
 Writes <runs>/offline_<run>.csv next to the data.
 """
-import ctypes, subprocess, sys, tempfile
+import ctypes, subprocess, sys, tempfile, time
 from pathlib import Path
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "python"))
 import qec_common as qc  # noqa: E402
+import qec_ai  # noqa: E402
 
 try:
     import pymatching
@@ -29,6 +33,7 @@ except ImportError:
     print("note: pymatching not installed -> `pip install pymatching` for the MWPM reference")
 
 SHIM = r"""
+#include "%s"
 #include "%s"
 extern "C" int decode_batch(int d, int r, int truth, const unsigned char* rows, int nshots, int nbits,
                             const unsigned char* caps, int weighted) {
@@ -43,17 +48,33 @@ extern "C" int decode_batch(int d, int r, int truth, const unsigned char* rows, 
   }
   return fails;
 }
+// AI decoder: load a packed model, decode all shots (decoded logical -> out), return active inputs
+extern "C" long ai_batch(int d, int r, const int* hdr, const int* words, int nwords,
+                         const unsigned char* rows, int nshots, int nbits, unsigned char* out) {
+  qec::configure(d, r);
+  ai::begin(hdr[0], hdr[1], hdr[2], hdr[3], hdr[4]);
+  ai::put(0, words, nwords);
+  long active = 0;
+  for (int s = 0; s < nshots; s++) {
+    for (int b = 0; b < nbits; b++) qec::bits[b] = rows[s * nbits + b];
+    active += qec::computeDetectors();
+    for (int k = 0; k < qec::D; k++) active += qec::dataBit(k);
+    out[s] = ai::decode();
+  }
+  return active;
+}
 """
 
 
 def build_lib():
     tmp = Path(tempfile.mkdtemp())
     src = tmp / "shim.cpp"
-    src.write_text(SHIM % (HERE.parent / "sketch" / "qec_decoders.h"))
+    src.write_text(SHIM % (HERE.parent / "sketch" / "qec_decoders.h", HERE.parent / "sketch" / "qec_ai.h"))
     lib = tmp / "libqecshim.so"
     subprocess.run(["g++", "-O2", "-shared", "-fPIC", "-w", "-o", str(lib), str(src)], check=True)
     so = ctypes.CDLL(str(lib))
     so.decode_batch.restype = ctypes.c_int
+    so.ai_batch.restype = ctypes.c_long
     return so
 
 
@@ -62,6 +83,20 @@ def c_fails(so, rows, d, rounds, truth, caps, weighted):
     caps = np.ascontiguousarray(caps, dtype=np.uint8)
     return so.decode_batch(d, rounds, truth, rows.ctypes.data_as(ctypes.c_void_p), rows.shape[0], rows.shape[1],
                            caps.ctypes.data_as(ctypes.c_void_p), int(weighted))
+
+
+def ai_c(so, model, rows):
+    """Board C inference of `model` on rows -> (decoded logicals, ns per shot, mean active inputs)."""
+    hdr, words = qec_ai.pack(model)
+    hdr = np.array(hdr, dtype=np.int32)
+    words = np.array(words, dtype=np.int32)
+    rows = np.ascontiguousarray(rows, dtype=np.uint8)
+    out = np.zeros(len(rows), dtype=np.uint8)
+    p = lambda a: a.ctypes.data_as(ctypes.c_void_p)
+    t0 = time.perf_counter()
+    active = so.ai_batch(model["d"], model["rounds"], p(hdr), p(words), len(words), p(rows), rows.shape[0], rows.shape[1], p(out))
+    ns = (time.perf_counter() - t0) * 1e9 / max(1, len(rows))
+    return out, ns, active / max(1, len(rows))
 
 
 def pm_fails(det, rows, d, rounds, truth, edges, B, weights):
@@ -85,7 +120,7 @@ def analyze_run(so, runs, name):
     raw, meta = qc.load_run(runs, name)
     R = meta["rounds"]
     dists = sorted({d for d, _ in raw})
-    cols = ["d", "shots", "p_data", "p_meas", "majority", "uf", "uf_weighted"] + (["pm", "pm_weighted"] if pymatching else [])
+    cols = ["d", "shots", "p_data", "p_meas", "majority", "uf", "uf_weighted"] + (["pm", "pm_weighted", "pm_w_mixed"] if pymatching else []) + ["ai", "ai_ns", "ai_adds"]
     print(f"\n== {name}  ({meta.get('backend')}, job {meta.get('job_id', '-')}, {R} rounds) ==")
     print("  ".join(f"{c:>11}" for c in cols))
     lines = [",".join(cols)]
@@ -94,7 +129,7 @@ def analyze_run(so, runs, name):
         dets = {t: qc.detection_events(raw[(d, t)], d, R) for t in (0, 1)}
         model = qc.summarize_probs(qc.estimate_edge_probs(np.concatenate([dets[0], dets[1]]), edges, B), edges)
         n = sum(len(raw[(d, t)]) for t in (0, 1))
-        f = {"majority": 0, "uf": 0, "uf_weighted": 0, "pm": 0, "pm_weighted": 0}
+        f = {"majority": 0, "uf": 0, "uf_weighted": 0, "pm": 0, "pm_weighted": 0, "pm_w_mixed": 0, "ai": 0}
         for t in (0, 1):
             rows = raw[(d, t)]
             f["majority"] += int((qc.majority_logical(rows, d, R) != t).sum())
@@ -109,9 +144,35 @@ def analyze_run(so, runs, name):
                 f["uf_weighted"] += c_fails(so, rows[part], d, R, t, caps, True)
                 if pymatching:
                     f["pm_weighted"] += pm_fails(dets[t][part], rows[part], d, R, t, edges, B, np.log((1 - pr) / pr))
-        vals = [str(d), str(n), f"{model['p_data']:.4f}", f"{model['p_meas']:.4f}"] + [fmt(f[c], n) for c in cols[4:]]
+        # label-free baselines: one error model / one network for both states, cross-fitted on two halves
+        rows_all = np.concatenate([raw[(d, 0)], raw[(d, 1)]])
+        truth_all = np.repeat(np.array([0, 1], dtype=np.uint8), [len(raw[(d, 0)]), len(raw[(d, 1)])])
+        det_all = np.concatenate([dets[0], dets[1]])
+        fold = np.random.default_rng(1).permutation(len(rows_all)) % 2
+        ns_sum, act_sum = 0.0, 0.0
+        if not qec_ai.fits(d, R):
+            f["ai"] = None
+        for k in (0, 1):
+            te, trn = fold == k, fold != k
+            if pymatching:
+                pr = qc.estimate_edge_probs(det_all[trn], edges, B)
+                w = np.log((1 - pr) / pr)
+                for t in (0, 1):
+                    sel = te & (truth_all == t)
+                    f["pm_w_mixed"] += pm_fails(det_all[sel], rows_all[sel], d, R, t, edges, B, w)
+            if f["ai"] is not None:
+                m = qec_ai.train(rows_all[trn], truth_all[trn], d, R)
+                out, ns, act = ai_c(so, m, rows_all[te])
+                assert (out == qec_ai.predict(m, rows_all[te])).all(), "C and Python AI inference disagree"
+                f["ai"] += int((out != truth_all[te]).sum())
+                ns_sum += ns / 2
+                act_sum += act / 2
+        f["ai_ns"], f["ai_adds"] = ns_sum, act_sum * qec_ai.MAX_H
+        num = lambda c, v: (f"{v:.0f}" if c in ("ai_ns", "ai_adds") else fmt(v, n)) if v is not None else "-"
+        vals = [str(d), str(n), f"{model['p_data']:.4f}", f"{model['p_meas']:.4f}"] + [num(c, f[c]) for c in cols[4:]]
         print("  ".join(f"{v:>11}" for v in vals))
-        lines.append(",".join([str(d), str(n), f"{model['p_data']:.5f}", f"{model['p_meas']:.5f}"] + [str(f[c] / n) for c in cols[4:]]))
+        csv = lambda c, v: "" if v is None else (f"{v:.1f}" if c in ("ai_ns", "ai_adds") else str(v / n))
+        lines.append(",".join([str(d), str(n), f"{model['p_data']:.5f}", f"{model['p_meas']:.5f}"] + [csv(c, f[c]) for c in cols[4:]]))
     out = Path(runs) / f"offline_{name}.csv"
     out.write_text("\n".join(lines) + "\n")
     print(f"saved {out}")

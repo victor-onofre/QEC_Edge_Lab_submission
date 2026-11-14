@@ -386,7 +386,8 @@ def analyze(raw, rounds, dshots, meta, run_name):
             "line": meta.get("line", [])[:2 * d - 1], "job_id": meta.get("job_id", "-"), "run": run_name,
         }
         if not agg["ai_ok"]:               # no model (too large) or upload failed: majority fallback ran
-            row["err"]["ai"] = row["fails"]["ai"] = row["cycles"]["ai"] = None
+            row["err"]["ai"] = row["fails"]["ai"] = None
+            row["cycles"] = {**row["cycles"], "ai": None}
         results.append(row)
         ui_send("result", row)
         e = row["err"]["uf_weighted"]

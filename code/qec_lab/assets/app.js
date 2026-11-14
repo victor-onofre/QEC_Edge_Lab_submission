@@ -7,6 +7,7 @@ const ERR = [
   { label: "majority (all shots)", cls: "maj", get: (r) => ({ p: r.maj_full, n: r.n_total }), dashed: true },
   { label: "UF fast", cls: "uf", get: (r) => ({ p: r.err.uf_fast, n: r.n_decoded }) },
   { label: "UF weighted", cls: "ufw", get: (r) => ({ p: r.err.uf_weighted, n: r.n_decoded }) },
+  { label: "AI (neural net)", cls: "ai", get: (r) => (r.err.ai != null ? { p: r.err.ai, n: r.n_decoded } : null) },
   { label: "PyMatching weighted", cls: "pm", get: (r) => (r.pm && r.pm.pm_weighted !== undefined ? { p: r.pm.pm_weighted, n: r.n_total } : null), dashed: true },
 ];
 const CYC = [
@@ -15,7 +16,9 @@ const CYC = [
   { key: "uf_naive", label: "UF naive", cls: "naive" },
   { key: "uf_fast", label: "UF fast", cls: "uf" },
   { key: "uf_weighted", label: "UF weighted", cls: "ufw" },
+  { key: "ai", label: "AI (neural net)", cls: "ai" },
 ];
+const cyc = (r, k) => (r.cycles[k] ? r.cycles[k].avg : null);   // null: decoder not run (e.g. no AI model)
 let mode = "sim";
 let rows = [];
 let runs = [];
@@ -186,20 +189,22 @@ function drawErr() {
 function drawCyc() {
   const svg = $("cycChart");
   svg.innerHTML = "";
-  legend("cycLegend", [...CYC, { cls: "budget", label: "budget (1 µs / round)" }]);
+  const cycs = CYC.filter((k) => rows.some((r) => cyc(r, k.key) != null));
+  legend("cycLegend", [...cycs, { cls: "budget", label: "budget (1 µs / round)" }]);
   if (!rows.length) { text(svg, 550, 130, "Waiting for results…", "c-empty"); return; }
   const budget = rows[0].cpu_mhz * rows[0].rounds;
-  const vals = rows.flatMap((r) => CYC.map((k) => r.cycles[k.key].avg)).filter((v) => v > 0);
+  const vals = rows.flatMap((r) => cycs.map((k) => cyc(r, k.key))).filter((v) => v > 0);
   const yMin = 10 ** Math.floor(Math.log10(Math.max(1, Math.min(...vals, budget) / 2)));
   const yMax = 10 ** Math.ceil(Math.log10(Math.max(...vals, budget) * 1.5));
   const ax = axesLog(svg, 1100, 260, rows.map((r) => r.d), yMin, yMax, fmtCyc);
   el("line", { x1: ax.L, y1: ax.Y(budget), x2: 1100 - ax.R, y2: ax.Y(budget), class: "c-budget" }, svg);
   text(svg, 1100 - ax.R - 4, ax.Y(budget) - 6, `real-time budget ${Math.round(budget)} cycles`, "c-tick budget", "end");
-  CYC.forEach((k) => {
+  cycs.forEach((k) => {
     let d = "";
-    rows.forEach((r, i) => { d += (i ? "L" : "M") + ax.X(r.d).toFixed(1) + "," + ax.Y(Math.max(r.cycles[k.key].avg, yMin)).toFixed(1); });
+    const rs = rows.filter((r) => cyc(r, k.key) != null);
+    rs.forEach((r, i) => { d += (i ? "L" : "M") + ax.X(r.d).toFixed(1) + "," + ax.Y(Math.max(r.cycles[k.key].avg, yMin)).toFixed(1); });
     el("path", { d, class: "c-line " + k.cls }, svg);
-    rows.forEach((r) => {
+    rs.forEach((r) => {
       const c = el("circle", { cx: ax.X(r.d), cy: ax.Y(Math.max(r.cycles[k.key].avg, yMin)), r: 4, class: "c-pt " + k.cls }, svg);
       el("title", {}, c).textContent = `${k.label}, d=${r.d}: avg ${Math.round(r.cycles[k.key].avg)} cycles (${(r.cycles[k.key].avg / r.cpu_mhz).toFixed(1)} µs), max ${Math.round(r.cycles[k.key].max)}`;
     });
@@ -231,27 +236,31 @@ function drawKpis() {
 
 function drawTable() {
   const tb = $("tbody");
-  if (!rows.length) { tb.innerHTML = `<tr><td colspan="14" class="empty">Run an experiment or re-decode a saved run</td></tr>`; $("tableHint").textContent = "no runs yet"; return; }
+  if (!rows.length) { tb.innerHTML = `<tr><td colspan="16" class="empty">Run an experiment or re-decode a saved run</td></tr>`; $("tableHint").textContent = "no runs yet"; return; }
   tb.innerHTML = "";
   const e = (p, n, f) => `${p === 0 ? "0" : fmtSci(p)}${f !== undefined ? ` <span class="hint">(${f})</span>` : ""}`;
   rows.forEach((r) => {
     const budget = r.cpu_mhz * r.rounds;
     const ok = r.cycles.uf_fast.avg <= budget;
     const pm = r.pm && r.pm.pm_weighted !== undefined ? e(r.pm.pm_weighted) : `<span class="hint">laptop tool</span>`;
-    const checks = r.transport_mismatch || r.uf_disagree
-      ? `<span class="badge bad">${r.transport_mismatch} / ${r.uf_disagree}</span>` : `<span class="badge ok">ok</span>`;
+    const aiMis = r.ai_mismatch || 0;
+    const checks = r.transport_mismatch || r.uf_disagree || aiMis
+      ? `<span class="badge bad">${r.transport_mismatch} / ${r.uf_disagree} / ${aiMis}</span>` : `<span class="badge ok">ok</span>`;
+    const ai = r.err.ai != null
+      ? `${e(r.err.ai, r.n_decoded, r.fails.ai)}${r.ai_full != null ? ` <span class="hint">· all ${r.ai_full === 0 ? "0" : fmtSci(r.ai_full)}</span>` : ""}`
+      : `<span class="hint">–</span>`;
     tb.insertAdjacentHTML("beforeend",
       `<tr><td><b>${r.d}</b></td><td>${r.qubits}</td><td>${r.p_data0 !== undefined ? `${(r.p_data0 * 100).toFixed(2)}% <span class="hint">/</span> ${(r.p_data1 * 100).toFixed(2)}%` : (r.p_data * 100).toFixed(2) + "%"}</td><td>${(r.p_meas * 100).toFixed(2)}%</td>` +
       `<td>${r.defects_per_shot.toFixed(2)}</td>` +
       `<td class="majtxt">${e(r.maj_full)}</td><td class="uftxt">${e(r.err.uf_fast, r.n_decoded, r.fails.uf_fast)}</td>` +
-      `<td class="ufwtxt">${e(r.err.uf_weighted, r.n_decoded, r.fails.uf_weighted)}</td><td class="pmtxt">${pm}</td>` +
+      `<td class="ufwtxt">${e(r.err.uf_weighted, r.n_decoded, r.fails.uf_weighted)}</td><td class="aitxt">${ai}</td><td class="pmtxt">${pm}</td>` +
       `<td>${fmtCyc(r.cycles.uf_naive.avg)}</td><td>${fmtCyc(r.cycles.uf_fast.avg)} <span class="hint">/ ${fmtCyc(r.cycles.uf_fast.max)}</span></td>` +
-      `<td>${fmtCyc(r.cycles.uf_weighted.avg)}</td>` +
+      `<td>${fmtCyc(r.cycles.uf_weighted.avg)}</td><td>${cyc(r, "ai") != null ? fmtCyc(cyc(r, "ai")) : "–"}</td>` +
       `<td><span class="badge ${ok ? "ok" : "bad"}">${ok ? "in" : "×" + (r.cycles.uf_fast.avg / budget).toFixed(0)}</span></td><td>${checks}</td></tr>`);
   });
   const last = rows[rows.length - 1];
   $("tableHint").textContent = `${last.mode === "hw" ? "IBM " + last.backend : "noise model"} · ${last.rounds} rounds · ${last.n_decoded} shots on MCU, ${last.n_total} on Linux · ${last.bridge_ms_per_shot.toFixed(1)} ms/shot over Bridge`;
-  $("layoutNote").textContent = "* = all shots, decoded on the Linux side. Checks = transport mismatches / naive-vs-fast UF disagreements." +
+  $("layoutNote").textContent = "* = all shots, decoded on the Linux side. AI = neural network trained on held-out shots of both states (never sees the label), run on the STM32; \"all\" = every shot, cross-fitted. Checks = transport mismatches / naive-vs-fast UF disagreements / MCU-vs-Python AI disagreements." +
     (last.mode === "hw" ? ` Job ${last.job_id}${last.line && last.line.length ? " · qubits " + last.line.join("–") : ""}.` : "");
 }
 
@@ -265,6 +274,7 @@ updateSliders(); estimate(); drawRuns(); renderAll();
 const RTDEC = {
   uf_fast: { label: "UF fast", cls: "uf" }, uf_weighted: { label: "UF weighted", cls: "ufw" },
   uf_naive: { label: "UF naive", cls: "naive" }, majority: { label: "majority", cls: "maj" }, greedy: { label: "greedy", cls: "gre" },
+  ai: { label: "AI (neural net)", cls: "ai" },
 };
 let rtPoints = [];
 let rtLoaded = null;
@@ -355,7 +365,11 @@ function showLoaded() {
     `<b>d = ${L.d}</b> · ${L.rounds} rounds · ${L.state === "both" ? "|0⟩ + |1⟩" : "|" + L.state + "⟩"} · ${L.backend}<br>` +
     `${L.shots.toLocaleString()} shots × ${L.stride} bytes = <b>${L.kb} KB</b> in STM32 RAM · loaded in ${L.load_s} s<br>` +
     `estimated p<sub>data</sub> ${(L.p_data * 100).toFixed(2)}% · p<sub>meas</sub> ${(L.p_meas * 100).toFixed(2)}% · ` +
-    `<span class="badge ${L.transport_ok ? "ok" : "bad"}">transport ${L.transport_ok ? "ok" : "MISMATCH"}</span>`;
+    `<span class="badge ${L.transport_ok ? "ok" : "bad"}">transport ${L.transport_ok ? "ok" : "MISMATCH"}</span>` +
+    (L.ai ? (L.ai.ok
+      ? `<br>AI decoder: ${L.ai.params.toLocaleString()} weights, trained on ${L.ai.train_shots.toLocaleString()} ${L.ai.in_sample ? "shots incl. the loaded ones (no spare shots)" : "other shots"} in ${L.ai.train_s} s · ` +
+        `<span class="badge ${L.ai.match ? "ok" : "bad"}">MCU = Python ${L.ai.match ? "ok" : "MISMATCH"}</span>`
+      : `<br>AI decoder: <span class="hint">${L.ai.why}</span>`) : "");
 }
 
 // ---- charts ----

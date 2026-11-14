@@ -132,3 +132,42 @@ Median data qubit error per round: |0⟩ 0.37%, |1⟩ 6.04% (|1⟩ 16× worse, c
 
 Both chips have the same coupling map, so the same line of physical qubits (82, 81, 76, …) was used on both; its quality differs a lot between the chips.
 
+
+## 5. On-device AI decoder vs graph decoders (all 4,000 shots, cross-fitted)
+
+Small MLP (inputs: detection events + final data bits, 32 hidden units, 1 output), trained in numpy on held-out shots, run on the STM32 in integer arithmetic (bit-exact with Python). The prepared state is only the training label. `pm_w_mixed` = PyMatching with weights learned from both states mixed (the fair, label-free baseline).
+
+### ibm_marrakesh
+
+| d | majority | UF weighted | PM weighted | PM mixed | **AI** | AI vs best other |
+|---|---|---|---|---|---|---|
+| 3 | 18.25% | 12.20% | 10.57% | 12.28% | **6.28%** | 1.7× fewer errors |
+| 5 | 9.78% | 4.15% | 3.80% | 3.60% | **1.80%** | 2.0× fewer errors |
+| 7 | 6.50% | 1.88% | 1.68% | 2.00% | **0.22%** | 7.4× fewer errors |
+| 9 | 3.05% | 0.53% | 0.47% | 0.53% | **5.0e-04** | 9.5× fewer errors |
+| 11 | 1.68% | 0.50% | 0.25% | 0.20% | **2.5e-04** | 8.0× fewer errors |
+
+### ibm_fez run 2
+
+| d | majority | UF weighted | PM weighted | PM mixed | **AI** | AI vs best other |
+|---|---|---|---|---|---|---|
+| 3 | 5.15% | 4.83% | 4.52% | 4.85% | **1.93%** | 2.4× fewer errors |
+| 5 | 2.00% | 1.07% | 1.10% | 0.97% | **0.50%** | 1.9× fewer errors |
+| 7 | 0.80% | 0.57% | 0.40% | 0.47% | **0.22%** | 1.8× fewer errors |
+| 9 | 0.47% | 0.18% | 0.10% | 0.12% | **0.22%** | 2.2× more errors |
+| 11 | 0.25% | 7.5e-04 | 7.5e-04 | 7.5e-04 | **0.30%** | 4.0× more errors |
+
+### ibm_fez run 1
+
+| d | majority | UF weighted | PM weighted | PM mixed | **AI** | AI vs best other |
+|---|---|---|---|---|---|---|
+| 3 | 5.03% | 5.22% | 4.23% | 4.42% | **1.82%** | 2.3× fewer errors |
+| 5 | 2.75% | 2.08% | 1.90% | 1.77% | **0.80%** | 2.2× fewer errors |
+| 7 | 1.07% | 0.35% | 0.30% | 0.35% | **0.30%** | 1.0× more errors |
+| 9 | 0.38% | 0.30% | 0.27% | 0.25% | **0.22%** | 1.1× fewer errors |
+| 11 | 0.30% | 0 (<2.5e-4) | 0 (<2.5e-4) | 0 (<2.5e-4) | **0.30%** | – |
+
+**Why it wins at small d:** on IBM hardware |1⟩ data qubits decay (T1) far more than |0⟩ ever flips; the network learns this asymmetric noise from the data, which matching and union-find cannot represent. A control network that sees only detection events is worse than union-find.
+
+**Where it loses:** on ibm_fez at d ≥ 11 the AI has an error floor of 0.2–0.4% (2,000 training shots are too few for ~120 inputs), while graph decoders reach < 0.075%.
+
