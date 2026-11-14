@@ -1,4 +1,4 @@
-# QEC Edge Lab — a €60 Arduino that corrects real quantum-computer errors
+# QEC Edge Lab: €60 Arduino that corrects real quantum-computer errors
 
 **Junction Finland 2026 · Best use of Arduino UNO Q** · tags: Junction Finland 2026, Arduino UNO Q, Modulino, Edge AI, Quantum computing
 
