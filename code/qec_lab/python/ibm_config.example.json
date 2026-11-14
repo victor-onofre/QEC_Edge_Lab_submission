@@ -1,0 +1,4 @@
+{
+  "token": "YOUR-IBM-QUANTUM-API-KEY",
+  "instance": "crn:v1:bluemix:public:quantum-computing:..."
+}

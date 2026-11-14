@@ -1,0 +1,674 @@
+[
+ {
+  "d": 3,
+  "rounds": 3,
+  "qubits": 5,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 1.07,
+  "err": {
+   "majority": 0.075,
+   "greedy": 0.0625,
+   "uf_naive": 0.06,
+   "uf_fast": 0.06,
+   "uf_weighted": 0.055
+  },
+  "fails": {
+   "majority": 30,
+   "greedy": 25,
+   "uf_naive": 24,
+   "uf_fast": 24,
+   "uf_weighted": 22
+  },
+  "maj_full": 0.0515,
+  "pm": {},
+  "p_data": 0.031769046156479394,
+  "p_meas": 0.0665733684501666,
+  "p_data0": 0.012340929900083087,
+  "p_data1": 0.057920802714797825,
+  "cycles": {
+   "majority": {
+    "avg": 411.0,
+    "max": 411.0
+   },
+   "greedy": {
+    "avg": 283.0,
+    "max": 1440.0
+   },
+   "uf_naive": {
+    "avg": 3008.0,
+    "max": 5679.0
+   },
+   "uf_fast": {
+    "avg": 1231.5,
+    "max": 6524.0
+   },
+   "uf_weighted": {
+    "avg": 1191.5,
+    "max": 5891.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 13.332386016845703,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_fez",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62
+  ],
+  "job_id": "dbs8pivv5hds73dim45g",
+  "run": "20261114-163126_ibm_fez_r3"
+ },
+ {
+  "d": 5,
+  "rounds": 3,
+  "qubits": 9,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 2.1375,
+  "err": {
+   "majority": 0.0125,
+   "greedy": 0.015,
+   "uf_naive": 0.01,
+   "uf_fast": 0.01,
+   "uf_weighted": 0.005
+  },
+  "fails": {
+   "majority": 5,
+   "greedy": 6,
+   "uf_naive": 4,
+   "uf_fast": 4,
+   "uf_weighted": 2
+  },
+  "maj_full": 0.02,
+  "pm": {},
+  "p_data": 0.02572513799087407,
+  "p_meas": 0.06555660608813962,
+  "p_data0": 0.006109930554437268,
+  "p_data1": 0.04968762476543056,
+  "cycles": {
+   "majority": {
+    "avg": 689.0,
+    "max": 689.0
+   },
+   "greedy": {
+    "avg": 570.0,
+    "max": 7312.0
+   },
+   "uf_naive": {
+    "avg": 5951.0,
+    "max": 14226.0
+   },
+   "uf_fast": {
+    "avg": 2280.0,
+    "max": 10874.0
+   },
+   "uf_weighted": {
+    "avg": 2214.0,
+    "max": 9958.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 13.87207567691803,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_fez",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42
+  ],
+  "job_id": "dbs8pivv5hds73dim45g",
+  "run": "20261114-163126_ibm_fez_r3"
+ },
+ {
+  "d": 7,
+  "rounds": 3,
+  "qubits": 13,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 3.03,
+  "err": {
+   "majority": 0.005,
+   "greedy": 0.0225,
+   "uf_naive": 0.01,
+   "uf_fast": 0.01,
+   "uf_weighted": 0.01
+  },
+  "fails": {
+   "majority": 2,
+   "greedy": 9,
+   "uf_naive": 4,
+   "uf_fast": 4,
+   "uf_weighted": 4
+  },
+  "maj_full": 0.008,
+  "pm": {},
+  "p_data": 0.023714118953044865,
+  "p_meas": 0.06413583607636981,
+  "p_data0": 0.0058789223579673614,
+  "p_data1": 0.04486751272733009,
+  "cycles": {
+   "majority": {
+    "avg": 967.0,
+    "max": 967.0
+   },
+   "greedy": {
+    "avg": 870.5,
+    "max": 7857.0
+   },
+   "uf_naive": {
+    "avg": 9016.5,
+    "max": 19864.0
+   },
+   "uf_fast": {
+    "avg": 3140.0,
+    "max": 15993.0
+   },
+   "uf_weighted": {
+    "avg": 3108.0,
+    "max": 15933.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 14.135705828666687,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_fez",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22
+  ],
+  "job_id": "dbs8pivv5hds73dim45g",
+  "run": "20261114-163126_ibm_fez_r3"
+ },
+ {
+  "d": 9,
+  "rounds": 3,
+  "qubits": 17,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 3.81,
+  "err": {
+   "majority": 0.0025,
+   "greedy": 0.005,
+   "uf_naive": 0.0,
+   "uf_fast": 0.0,
+   "uf_weighted": 0.0
+  },
+  "fails": {
+   "majority": 1,
+   "greedy": 2,
+   "uf_naive": 0,
+   "uf_fast": 0,
+   "uf_weighted": 0
+  },
+  "maj_full": 0.00475,
+  "pm": {},
+  "p_data": 0.024621002821923955,
+  "p_meas": 0.056447372318062704,
+  "p_data0": 0.005883903368415812,
+  "p_data1": 0.046702895149418694,
+  "cycles": {
+   "majority": {
+    "avg": 1245.0,
+    "max": 1245.0
+   },
+   "greedy": {
+    "avg": 1259.0,
+    "max": 13743.0
+   },
+   "uf_naive": {
+    "avg": 12328.0,
+    "max": 24639.0
+   },
+   "uf_fast": {
+    "avg": 4021.5,
+    "max": 15951.0
+   },
+   "uf_weighted": {
+    "avg": 3823.5,
+    "max": 14127.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 14.482734203338623,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_fez",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4
+  ],
+  "job_id": "dbs8pivv5hds73dim45g",
+  "run": "20261114-163126_ibm_fez_r3"
+ },
+ {
+  "d": 11,
+  "rounds": 3,
+  "qubits": 21,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 4.485,
+  "err": {
+   "majority": 0.005,
+   "greedy": 0.0,
+   "uf_naive": 0.0,
+   "uf_fast": 0.0,
+   "uf_weighted": 0.0
+  },
+  "fails": {
+   "majority": 2,
+   "greedy": 0,
+   "uf_naive": 0,
+   "uf_fast": 0,
+   "uf_weighted": 0
+  },
+  "maj_full": 0.0025,
+  "pm": {},
+  "p_data": 0.022461259168977652,
+  "p_meas": 0.047978764195035994,
+  "p_data0": 0.004487803318091234,
+  "p_data1": 0.04304768619379967,
+  "cycles": {
+   "majority": {
+    "avg": 1523.0,
+    "max": 1523.0
+   },
+   "greedy": {
+    "avg": 1639.5,
+    "max": 19203.0
+   },
+   "uf_naive": {
+    "avg": 15480.5,
+    "max": 38358.0
+   },
+   "uf_fast": {
+    "avg": 4636.0,
+    "max": 23045.0
+   },
+   "uf_weighted": {
+    "avg": 4731.5,
+    "max": 22010.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 14.633535742759705,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_fez",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4,
+   5,
+   6,
+   7,
+   17
+  ],
+  "job_id": "dbs8pivv5hds73dim45g",
+  "run": "20261114-163126_ibm_fez_r3"
+ },
+ {
+  "d": 15,
+  "rounds": 3,
+  "qubits": 29,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 6.09,
+  "err": {
+   "majority": 0.0,
+   "greedy": 0.005,
+   "uf_naive": 0.0,
+   "uf_fast": 0.0,
+   "uf_weighted": 0.0
+  },
+  "fails": {
+   "majority": 0,
+   "greedy": 2,
+   "uf_naive": 0,
+   "uf_fast": 0,
+   "uf_weighted": 0
+  },
+  "maj_full": 0.00075,
+  "pm": {},
+  "p_data": 0.02161497972291696,
+  "p_meas": 0.046804452521378125,
+  "p_data0": 0.004350973632598397,
+  "p_data1": 0.04126090914007636,
+  "cycles": {
+   "majority": {
+    "avg": 2079.0,
+    "max": 2079.0
+   },
+   "greedy": {
+    "avg": 2917.0,
+    "max": 16445.0
+   },
+   "uf_naive": {
+    "avg": 22497.0,
+    "max": 64024.0
+   },
+   "uf_fast": {
+    "avg": 6367.5,
+    "max": 41985.0
+   },
+   "uf_weighted": {
+    "avg": 6437.5,
+    "max": 34642.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 14.820201992988586,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_fez",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4,
+   5,
+   6,
+   7,
+   17,
+   27,
+   26,
+   25,
+   37,
+   45,
+   46,
+   47,
+   48
+  ],
+  "job_id": "dbs8pivv5hds73dim45g",
+  "run": "20261114-163126_ibm_fez_r3"
+ },
+ {
+  "d": 21,
+  "rounds": 3,
+  "qubits": 41,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 8.0275,
+  "err": {
+   "majority": 0.0,
+   "greedy": 0.0,
+   "uf_naive": 0.0,
+   "uf_fast": 0.0,
+   "uf_weighted": 0.0
+  },
+  "fails": {
+   "majority": 0,
+   "greedy": 0,
+   "uf_naive": 0,
+   "uf_fast": 0,
+   "uf_weighted": 0
+  },
+  "maj_full": 0.0,
+  "pm": {},
+  "p_data": 0.022400834900621114,
+  "p_meas": 0.04189186428698583,
+  "p_data0": 0.0036901102188218395,
+  "p_data1": 0.04340632387660369,
+  "cycles": {
+   "majority": {
+    "avg": 2913.0,
+    "max": 2913.0
+   },
+   "greedy": {
+    "avg": 5465.5,
+    "max": 67866.0
+   },
+   "uf_naive": {
+    "avg": 32728.0,
+    "max": 57890.0
+   },
+   "uf_fast": {
+    "avg": 8300.0,
+    "max": 41188.0
+   },
+   "uf_weighted": {
+    "avg": 8391.0,
+    "max": 30132.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 15.152544975280762,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_fez",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4,
+   5,
+   6,
+   7,
+   17,
+   27,
+   26,
+   25,
+   37,
+   45,
+   46,
+   47,
+   48,
+   49,
+   50,
+   51,
+   52,
+   53,
+   39,
+   33,
+   34,
+   35,
+   19,
+   15,
+   14
+  ],
+  "job_id": "dbs8pivv5hds73dim45g",
+  "run": "20261114-163126_ibm_fez_r3"
+ },
+ {
+  "d": 25,
+  "rounds": 3,
+  "qubits": 49,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 9.7125,
+  "err": {
+   "majority": 0.0,
+   "greedy": 0.0,
+   "uf_naive": 0.0,
+   "uf_fast": 0.0,
+   "uf_weighted": 0.0
+  },
+  "fails": {
+   "majority": 0,
+   "greedy": 0,
+   "uf_naive": 0,
+   "uf_fast": 0,
+   "uf_weighted": 0
+  },
+  "maj_full": 0.0,
+  "pm": {},
+  "p_data": 0.022381206800906352,
+  "p_meas": 0.04115480569815674,
+  "p_data0": 0.003029923946779335,
+  "p_data1": 0.043606195972728176,
+  "cycles": {
+   "majority": {
+    "avg": 3469.0,
+    "max": 3469.0
+   },
+   "greedy": {
+    "avg": 7714.5,
+    "max": 52948.0
+   },
+   "uf_naive": {
+    "avg": 39642.0,
+    "max": 90435.0
+   },
+   "uf_fast": {
+    "avg": 9901.5,
+    "max": 37911.0
+   },
+   "uf_weighted": {
+    "avg": 10247.0,
+    "max": 42448.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 15.259514451026917,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_fez",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4,
+   5,
+   6,
+   7,
+   17,
+   27,
+   26,
+   25,
+   37,
+   45,
+   46,
+   47,
+   48,
+   49,
+   50,
+   51,
+   52,
+   53,
+   39,
+   33,
+   34,
+   35,
+   19,
+   15,
+   14,
+   13,
+   12,
+   11,
+   18,
+   31,
+   30,
+   29,
+   38
+  ],
+  "job_id": "dbs8pivv5hds73dim45g",
+  "run": "20261114-163126_ibm_fez_r3"
+ }
+]

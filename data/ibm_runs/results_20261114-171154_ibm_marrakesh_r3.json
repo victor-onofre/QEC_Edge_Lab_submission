@@ -1,0 +1,674 @@
+[
+ {
+  "d": 3,
+  "rounds": 3,
+  "qubits": 5,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 1.8275,
+  "err": {
+   "majority": 0.18,
+   "greedy": 0.145,
+   "uf_naive": 0.135,
+   "uf_fast": 0.135,
+   "uf_weighted": 0.12
+  },
+  "fails": {
+   "majority": 72,
+   "greedy": 58,
+   "uf_naive": 54,
+   "uf_fast": 54,
+   "uf_weighted": 48
+  },
+  "maj_full": 0.1825,
+  "pm": {},
+  "p_data": 0.10769169136699908,
+  "p_meas": 0.056642507743820826,
+  "p_data0": 0.05255801933897223,
+  "p_data1": 0.15979666656944339,
+  "cycles": {
+   "majority": {
+    "avg": 453.0,
+    "max": 453.0
+   },
+   "greedy": {
+    "avg": 412.0,
+    "max": 2039.0
+   },
+   "uf_naive": {
+    "avg": 4042.0,
+    "max": 5815.0
+   },
+   "uf_fast": {
+    "avg": 2518.5,
+    "max": 7605.0
+   },
+   "uf_weighted": {
+    "avg": 1933.0,
+    "max": 5762.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 13.461143970489502,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_marrakesh",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62
+  ],
+  "job_id": "dbs9cg9abdes73fqsuu0",
+  "run": "20261114-171154_ibm_marrakesh_r3"
+ },
+ {
+  "d": 5,
+  "rounds": 3,
+  "qubits": 9,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 2.3875,
+  "err": {
+   "majority": 0.0775,
+   "greedy": 0.0675,
+   "uf_naive": 0.0325,
+   "uf_fast": 0.0325,
+   "uf_weighted": 0.02
+  },
+  "fails": {
+   "majority": 31,
+   "greedy": 27,
+   "uf_naive": 13,
+   "uf_fast": 13,
+   "uf_weighted": 8
+  },
+  "maj_full": 0.09775,
+  "pm": {},
+  "p_data": 0.07795639910854732,
+  "p_meas": 0.04250033720905296,
+  "p_data0": 0.03635726211141065,
+  "p_data1": 0.12028385287013892,
+  "cycles": {
+   "majority": {
+    "avg": 721.0,
+    "max": 721.0
+   },
+   "greedy": {
+    "avg": 650.0,
+    "max": 4778.0
+   },
+   "uf_naive": {
+    "avg": 7061.0,
+    "max": 13905.0
+   },
+   "uf_fast": {
+    "avg": 3287.5,
+    "max": 12346.0
+   },
+   "uf_weighted": {
+    "avg": 2631.0,
+    "max": 9112.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 13.959553837776184,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_marrakesh",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42
+  ],
+  "job_id": "dbs9cg9abdes73fqsuu0",
+  "run": "20261114-171154_ibm_marrakesh_r3"
+ },
+ {
+  "d": 7,
+  "rounds": 3,
+  "qubits": 13,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 3.975,
+  "err": {
+   "majority": 0.0975,
+   "greedy": 0.035,
+   "uf_naive": 0.0375,
+   "uf_fast": 0.0375,
+   "uf_weighted": 0.0325
+  },
+  "fails": {
+   "majority": 39,
+   "greedy": 14,
+   "uf_naive": 15,
+   "uf_fast": 15,
+   "uf_weighted": 13
+  },
+  "maj_full": 0.065,
+  "pm": {},
+  "p_data": 0.06704322537260825,
+  "p_meas": 0.042951616154258784,
+  "p_data0": 0.0316102637157983,
+  "p_data1": 0.10520129226779092,
+  "cycles": {
+   "majority": {
+    "avg": 989.0,
+    "max": 989.0
+   },
+   "greedy": {
+    "avg": 1309.0,
+    "max": 8426.0
+   },
+   "uf_naive": {
+    "avg": 10598.0,
+    "max": 19289.0
+   },
+   "uf_fast": {
+    "avg": 4851.0,
+    "max": 16879.0
+   },
+   "uf_weighted": {
+    "avg": 4316.0,
+    "max": 15446.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 14.343586564064026,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_marrakesh",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22
+  ],
+  "job_id": "dbs9cg9abdes73fqsuu0",
+  "run": "20261114-171154_ibm_marrakesh_r3"
+ },
+ {
+  "d": 9,
+  "rounds": 3,
+  "qubits": 17,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 4.25,
+  "err": {
+   "majority": 0.035,
+   "greedy": 0.0325,
+   "uf_naive": 0.0175,
+   "uf_fast": 0.0175,
+   "uf_weighted": 0.0125
+  },
+  "fails": {
+   "majority": 14,
+   "greedy": 13,
+   "uf_naive": 7,
+   "uf_fast": 7,
+   "uf_weighted": 5
+  },
+  "maj_full": 0.0305,
+  "pm": {},
+  "p_data": 0.05836901446498613,
+  "p_meas": 0.03557456199449971,
+  "p_data0": 0.02214611802388644,
+  "p_data1": 0.09498443527438796,
+  "cycles": {
+   "majority": {
+    "avg": 1257.0,
+    "max": 1257.0
+   },
+   "greedy": {
+    "avg": 1669.5,
+    "max": 11133.0
+   },
+   "uf_naive": {
+    "avg": 13567.5,
+    "max": 31549.0
+   },
+   "uf_fast": {
+    "avg": 5224.0,
+    "max": 24282.0
+   },
+   "uf_weighted": {
+    "avg": 4686.5,
+    "max": 16947.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 14.516376852989197,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_marrakesh",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4
+  ],
+  "job_id": "dbs9cg9abdes73fqsuu0",
+  "run": "20261114-171154_ibm_marrakesh_r3"
+ },
+ {
+  "d": 11,
+  "rounds": 3,
+  "qubits": 21,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 5.015,
+  "err": {
+   "majority": 0.03,
+   "greedy": 0.04,
+   "uf_naive": 0.0125,
+   "uf_fast": 0.0125,
+   "uf_weighted": 0.01
+  },
+  "fails": {
+   "majority": 12,
+   "greedy": 16,
+   "uf_naive": 5,
+   "uf_fast": 5,
+   "uf_weighted": 4
+  },
+  "maj_full": 0.01675,
+  "pm": {},
+  "p_data": 0.05335624745070815,
+  "p_meas": 0.03137736514223538,
+  "p_data0": 0.018677982193494855,
+  "p_data1": 0.08920859226777861,
+  "cycles": {
+   "majority": {
+    "avg": 1525.0,
+    "max": 1525.0
+   },
+   "greedy": {
+    "avg": 2127.5,
+    "max": 13995.0
+   },
+   "uf_naive": {
+    "avg": 17177.5,
+    "max": 49429.0
+   },
+   "uf_fast": {
+    "avg": 6224.5,
+    "max": 32228.0
+   },
+   "uf_weighted": {
+    "avg": 5686.5,
+    "max": 21953.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 14.693322777748108,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_marrakesh",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4,
+   5,
+   6,
+   7,
+   17
+  ],
+  "job_id": "dbs9cg9abdes73fqsuu0",
+  "run": "20261114-171154_ibm_marrakesh_r3"
+ },
+ {
+  "d": 15,
+  "rounds": 3,
+  "qubits": 29,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 7.7075,
+  "err": {
+   "majority": 0.0125,
+   "greedy": 0.02,
+   "uf_naive": 0.0025,
+   "uf_fast": 0.0025,
+   "uf_weighted": 0.0025
+  },
+  "fails": {
+   "majority": 5,
+   "greedy": 8,
+   "uf_naive": 1,
+   "uf_fast": 1,
+   "uf_weighted": 1
+  },
+  "maj_full": 0.018,
+  "pm": {},
+  "p_data": 0.05323022479613274,
+  "p_meas": 0.03460928060499967,
+  "p_data0": 0.015643806116406873,
+  "p_data1": 0.08937434806902425,
+  "cycles": {
+   "majority": {
+    "avg": 2061.0,
+    "max": 2061.0
+   },
+   "greedy": {
+    "avg": 5096.0,
+    "max": 29492.0
+   },
+   "uf_naive": {
+    "avg": 24560.5,
+    "max": 52806.0
+   },
+   "uf_fast": {
+    "avg": 9144.0,
+    "max": 37041.0
+   },
+   "uf_weighted": {
+    "avg": 9348.0,
+    "max": 31777.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 14.954972267150879,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_marrakesh",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4,
+   5,
+   6,
+   7,
+   17,
+   27,
+   26,
+   25,
+   37,
+   45,
+   46,
+   47,
+   48
+  ],
+  "job_id": "dbs9cg9abdes73fqsuu0",
+  "run": "20261114-171154_ibm_marrakesh_r3"
+ },
+ {
+  "d": 21,
+  "rounds": 3,
+  "qubits": 41,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 10.125,
+  "err": {
+   "majority": 0.0125,
+   "greedy": 0.0175,
+   "uf_naive": 0.0025,
+   "uf_fast": 0.0025,
+   "uf_weighted": 0.0025
+  },
+  "fails": {
+   "majority": 5,
+   "greedy": 7,
+   "uf_naive": 1,
+   "uf_fast": 1,
+   "uf_weighted": 1
+  },
+  "maj_full": 0.00675,
+  "pm": {},
+  "p_data": 0.047410133381675594,
+  "p_meas": 0.03350042618185576,
+  "p_data0": 0.012444087698911841,
+  "p_data1": 0.08216985872398117,
+  "cycles": {
+   "majority": {
+    "avg": 2865.0,
+    "max": 2865.0
+   },
+   "greedy": {
+    "avg": 9832.0,
+    "max": 72137.0
+   },
+   "uf_naive": {
+    "avg": 35441.0,
+    "max": 88255.0
+   },
+   "uf_fast": {
+    "avg": 11529.0,
+    "max": 54241.0
+   },
+   "uf_weighted": {
+    "avg": 11917.5,
+    "max": 44362.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 15.291632413864136,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_marrakesh",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4,
+   5,
+   6,
+   7,
+   17,
+   27,
+   26,
+   25,
+   37,
+   45,
+   46,
+   47,
+   48,
+   49,
+   50,
+   51,
+   52,
+   53,
+   39,
+   33,
+   34,
+   35,
+   19,
+   15,
+   14
+  ],
+  "job_id": "dbs9cg9abdes73fqsuu0",
+  "run": "20261114-171154_ibm_marrakesh_r3"
+ },
+ {
+  "d": 25,
+  "rounds": 3,
+  "qubits": 49,
+  "n_decoded": 400,
+  "n_total": 4000,
+  "defects_per_shot": 11.95,
+  "err": {
+   "majority": 0.005,
+   "greedy": 0.0,
+   "uf_naive": 0.0,
+   "uf_fast": 0.0,
+   "uf_weighted": 0.0
+  },
+  "fails": {
+   "majority": 2,
+   "greedy": 0,
+   "uf_naive": 0,
+   "uf_fast": 0,
+   "uf_weighted": 0
+  },
+  "maj_full": 0.00325,
+  "pm": {},
+  "p_data": 0.04528910352879543,
+  "p_meas": 0.03517807089416652,
+  "p_data0": 0.011469846451516821,
+  "p_data1": 0.0812477896855724,
+  "cycles": {
+   "majority": {
+    "avg": 3401.0,
+    "max": 3401.0
+   },
+   "greedy": {
+    "avg": 13824.5,
+    "max": 136218.0
+   },
+   "uf_naive": {
+    "avg": 42073.0,
+    "max": 107527.0
+   },
+   "uf_fast": {
+    "avg": 13166.5,
+    "max": 70394.0
+   },
+   "uf_weighted": {
+    "avg": 14334.0,
+    "max": 55688.0
+   }
+  },
+  "transport_mismatch": 0,
+  "uf_disagree": 0,
+  "bridge_ms_per_shot": 15.35932719707489,
+  "cpu_mhz": 160.0,
+  "timer": "DWT cycle counter @ 160 MHz",
+  "mode": "hw",
+  "backend": "ibm_marrakesh",
+  "line": [
+   82,
+   81,
+   76,
+   61,
+   62,
+   63,
+   56,
+   43,
+   42,
+   41,
+   36,
+   21,
+   22,
+   23,
+   16,
+   3,
+   4,
+   5,
+   6,
+   7,
+   17,
+   27,
+   26,
+   25,
+   37,
+   45,
+   46,
+   47,
+   48,
+   49,
+   50,
+   51,
+   52,
+   53,
+   39,
+   33,
+   34,
+   35,
+   19,
+   15,
+   14,
+   13,
+   12,
+   11,
+   18,
+   31,
+   30,
+   29,
+   38
+  ],
+  "job_id": "dbs9cg9abdes73fqsuu0",
+  "run": "20261114-171154_ibm_marrakesh_r3"
+ }
+]

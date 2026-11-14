@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QEC Decoder Lab</title>
+  <link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">⌬</div>
+      <div>
+        <h1>QEC Decoder Lab</h1>
+        <p>Repetition codes on IBM Quantum · decoded on the UNO Q's STM32 · stages 1.5 + 2</p>
+      </div>
+    </div>
+    <div class="status">
+      <span class="pill" id="conn"><i></i><b>offline</b></span>
+      <span class="pill" id="phase"><i></i><b>-</b></span>
+      <span class="pill" id="backend"><i></i><b>-</b></span>
+      <span class="pill muted" id="timer"><b>-</b></span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="tabAcc">Accuracy</button>
+    <button class="tab" data-tab="tabRt">Real-time (backlog)</button>
+  </nav>
+
+  <main class="grid" id="tabAcc">
+    <!-- New experiment -->
+    <section class="card span-4">
+      <div class="card-head"><h2>New experiment</h2><span class="hint" id="estimate"></span></div>
+      <div class="segmented full" role="group">
+        <button id="segSim" class="seg active">Noise model</button>
+        <button id="segHw" class="seg">IBM hardware</button>
+      </div>
+      <label>Code distances <input id="dists" type="text" value="3,5,7,9,11,15,21,25" /></label>
+      <div class="row2">
+        <label>Syndrome rounds <input id="rounds" type="number" min="1" max="10" value="3" /></label>
+        <label>Shots / state <input id="shots" type="number" min="50" step="50" value="2000" /></label>
+      </div>
+      <label>Shots streamed to the MCU per distance <input id="dshots" type="number" min="10" step="10" value="400" /></label>
+      <div id="simOnly">
+        <label>Data error per round p <span class="val" id="pVal">2.0%</span>
+          <input id="p" type="range" min="0.002" max="0.12" step="0.002" value="0.02" /></label>
+        <label>Measurement error q <span class="val" id="qVal">4.0%</span>
+          <input id="q" type="range" min="0.002" max="0.15" step="0.002" value="0.04" /></label>
+      </div>
+      <button id="runBtn" class="primary full">Run experiment</button>
+    </section>
+
+    <!-- Logical error chart -->
+    <section class="card span-8">
+      <div class="card-head">
+        <h2>Logical error rate vs code distance</h2>
+        <span class="legend" id="errLegend"></span>
+      </div>
+      <svg id="errChart" viewBox="0 0 720 270"></svg>
+      <p class="note">Solid = decoded on the STM32 (subset of shots) · dashed = Linux side, all shots. Hollow markers = no failures seen (upper bound). Weights are learned per logical state from held-out shots (|1⟩ decays much faster than |0⟩ on hardware).</p>
+    </section>
+
+    <!-- Saved runs -->
+    <section class="card span-4">
+      <div class="card-head"><h2>Saved runs</h2><span class="hint">re-decode without using the QPU</span></div>
+      <select id="runSel" size="5"></select>
+      <div class="row2 tight">
+        <button id="redecodeBtn" class="secondary">Re-decode selected</button>
+        <span class="hint" id="runInfo"></span>
+      </div>
+      <label>Import an earlier IBM job by ID
+        <div class="inline"><input id="jobId" type="text" placeholder="e.g. dbs859gk09pc73avrvi0" /><button id="importBtn" class="secondary">Import</button></div>
+      </label>
+      <p class="note">Imported and hardware runs are stored on the board in <code>python/runs/</code>. Copy that folder to your laptop and run <code>tools/qec_offline.py</code> for full-statistics PyMatching results.</p>
+    </section>
+
+    <!-- KPIs -->
+    <section class="card span-8">
+      <div class="card-head"><h2>Highlights</h2><span class="hint" id="kpiHint">-</span></div>
+      <div class="kpis four">
+        <div class="kpi"><span class="kpi-label">Data error / round, |0⟩ vs |1⟩</span><span class="kpi-value" id="kPd">–</span><span class="kpi-sub" id="kPm">measurement error –</span></div>
+        <div class="kpi"><span class="kpi-label">Fast vs naive union-find</span><span class="kpi-value accent" id="kSpeed">–</span><span class="kpi-sub" id="kSpeedSub">speed-up on the STM32</span></div>
+        <div class="kpi"><span class="kpi-label">Weighted vs uniform UF</span><span class="kpi-value" id="kWeight">–</span><span class="kpi-sub">total failures, all distances (MCU)</span></div>
+        <div class="kpi"><span class="kpi-label">Largest d within budget</span><span class="kpi-value" id="kBudget">–</span><span class="kpi-sub" id="kBudgetSub">fast UF, average cycles</span></div>
+      </div>
+    </section>
+
+    <!-- Cycles chart -->
+    <section class="card span-12">
+      <div class="card-head">
+        <h2>Decoder cost on the STM32</h2>
+        <span class="legend" id="cycLegend"></span>
+      </div>
+      <svg id="cycChart" viewBox="0 0 1100 260"></svg>
+    </section>
+
+    <!-- Table -->
+    <section class="card span-12">
+      <div class="card-head"><h2>Results</h2><span class="hint" id="tableHint">no runs yet</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>d</th><th>qubits</th><th>p data |0⟩ / |1⟩</th><th>p meas</th><th>defects</th>
+              <th>majority*</th><th>UF fast</th><th>UF weighted</th><th>PyMatching*</th>
+              <th>cyc naive</th><th>cyc fast</th><th>cyc weighted</th><th>budget</th><th>checks</th></tr>
+          </thead>
+          <tbody id="tbody"><tr><td colspan="14" class="empty">Run an experiment or re-decode a saved run</td></tr></tbody>
+        </table>
+      </div>
+      <p class="note" id="layoutNote">* = all shots, decoded on the Linux side.</p>
+    </section>
+  </main>
+
+
+  <main class="grid" id="tabRt" hidden>
+    <!-- Load -->
+    <section class="card span-4">
+      <div class="card-head"><h2>1 · Load syndromes into the STM32</h2><span class="hint">once, in bulk</span></div>
+      <label>Source <select id="rtSource" size="1"></select></label>
+      <div class="row2">
+        <label>Distance <select id="rtD" size="1"></select></label>
+        <label>Logical state <select id="rtState" size="1"><option value="both">both (mixed)</option><option value="0">|0⟩ only</option><option value="1">|1⟩ only</option></select></label>
+      </div>
+      <label>Shots <input id="rtN" type="number" min="100" step="100" value="4000" /></label>
+      <button id="rtLoadBtn" class="primary full">Load into MCU RAM</button>
+      <div class="loaded" id="rtLoaded">Nothing loaded yet.</div>
+    </section>
+
+    <!-- Sweep -->
+    <section class="card span-4">
+      <div class="card-head"><h2>2 · Sweep the round time τ</h2><span class="hint">replayed in real time on the MCU</span></div>
+      <div class="checks" id="rtDecs">
+        <label class="chk"><input type="checkbox" value="uf_fast" checked /> UF fast</label>
+        <label class="chk"><input type="checkbox" value="uf_weighted" checked /> UF weighted</label>
+        <label class="chk"><input type="checkbox" value="uf_naive" checked /> UF naive</label>
+        <label class="chk"><input type="checkbox" value="majority" /> majority</label>
+      </div>
+      <div class="row2">
+        <label>τ min (ns) <input id="rtTmin" type="number" value="100" /></label>
+        <label>τ max (ns) <input id="rtTmax" type="number" value="100000" /></label>
+      </div>
+      <div class="row2">
+        <label>Points <input id="rtPts" type="number" min="3" max="25" value="13" /></label>
+        <label>Shots per point <input id="rtSweepN" type="number" min="100" step="100" value="3000" /></label>
+      </div>
+      <button id="rtSweepBtn" class="primary full">Run sweep</button>
+      <p class="note">A shot is complete every R·τ. The decoder keeps up only while its average decode time is below R·τ. The dashed vertical line is that limit.</p>
+    </section>
+
+    <!-- Live -->
+    <section class="card span-4">
+      <div class="card-head"><h2>3 · Live mode</h2><span class="hint" id="rtKnob">knob or slider sets τ</span></div>
+      <div class="row2">
+        <label>Decoder <select id="rtLiveDec" size="1"><option value="uf_fast">UF fast</option><option value="uf_weighted">UF weighted</option><option value="uf_naive">UF naive</option><option value="majority">majority</option></select></label>
+        <label>τ <span class="val" id="rtTauVal">2.00 µs</span><input id="rtTau" type="range" min="0" max="100" value="55" /></label>
+      </div>
+      <div class="liveread">
+        <div><span class="kpi-label">round time τ</span><span class="kpi-value" id="lvTau">–</span></div>
+        <div><span class="kpi-label">max backlog</span><span class="kpi-value" id="lvBack">–</span></div>
+        <div><span class="kpi-label">mean latency</span><span class="kpi-value" id="lvLat">–</span></div>
+      </div>
+      <div class="verdict" id="lvVerdict">not running</div>
+      <div class="row2 tight">
+        <button id="rtLiveBtn" class="primary">Start live</button>
+        <button id="rtLiveStop" class="secondary">Stop</button>
+      </div>
+    </section>
+
+    <section class="card span-6">
+      <div class="card-head"><h2>Latency vs round time</h2><span class="legend" id="rtLatLegend"></span></div>
+      <svg id="rtLatChart" viewBox="0 0 720 300"></svg>
+      <p class="note">Solid = p99 latency, dashed = median (shot complete → decoded). The latency jumps by orders of magnitude when τ drops below the limit.</p>
+    </section>
+    <section class="card span-6">
+      <div class="card-head"><h2>Maximum backlog vs round time</h2><span class="legend" id="rtBackLegend"></span></div>
+      <svg id="rtBackChart" viewBox="0 0 720 300"></svg>
+      <p class="note">Shots waiting to be decoded. Below the limit the queue grows for as long as the experiment runs.</p>
+    </section>
+
+    <section class="card span-12">
+      <div class="card-head"><h2>Live backlog</h2><span class="hint">100 ms windows · LED matrix shows the same on the board</span></div>
+      <svg id="rtLiveChart" viewBox="0 0 1100 200"></svg>
+    </section>
+
+    <section class="card span-12">
+      <div class="card-head"><h2>Sweep results</h2><span class="hint" id="rtLimits"></span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>decoder</th><th>τ</th><th>shot period R·τ</th><th>mean decode</th><th>max decode</th><th>p50 latency</th><th>p99 latency</th><th>max latency</th><th>max backlog</th><th>logical fails</th><th>verdict</th></tr></thead>
+          <tbody id="rtTbody"><tr><td colspan="11" class="empty">Load shots and run a sweep</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="libs/socket.io.min.js"></script>
+  <script src="libs/arduino.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

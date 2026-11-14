@@ -1,0 +1,8 @@
+# secrets: never commit the real IBM Quantum key
+ibm_config.json
+!ibm_config.example.json
+# local / generated
+__pycache__/
+*.pyc
+.cache/
+code/*/python/runs/
