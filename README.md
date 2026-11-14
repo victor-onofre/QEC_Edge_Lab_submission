@@ -46,6 +46,12 @@ likely flipped, so they can be corrected. This program is called the **decoder**
 **This project builds that decoder on an Arduino**, checks how accurate and how fast it is on real IBM data, and
 uses AI to make it smarter.
 
+**Detecting or correcting?** As in Google's and IBM's error-correction experiments, the qubits are not physically
+flipped back: the decoder works out which errors happened and **corrects the measured result in software** (experts
+call this tracking the errors in the "Pauli frame"). The proof that this is correction and not just detection is that
+the final answer gets *more* reliable as more qubits are added. Our decoding runs after each IBM job; the real-time
+test replays the real data on the Arduino at realistic speed.
+
 ---
 
 ## Why this matters: the race to build fast decoders
@@ -268,7 +274,9 @@ QEC_Edge_Lab_submission/
 
 1. Create a free IBM Quantum account (Open Plan); copy your API key and instance CRN. *(Optional: the
    "Noise model" mode works without any account.)*
-2. In Arduino App Lab 0.12, create an app `qec_lab`, add the **WebUI - HTML** brick and the **Modulino** sketch library.
+2. **Easiest:** import `qec_lab_import.zip` (in the repository root) into Arduino App Lab; it contains `app.yaml`
+   (with the WebUI brick) and `sketch/sketch.yaml` (with the Modulino library). **Manual alternative:** in Arduino App Lab 0.12,
+   create an app `qec_lab`, add the **WebUI - HTML** brick and the **Modulino** sketch library.
 3. Copy `code/qec_lab/{python,sketch,assets}` into the app. **Add the brick first, then copy** (adding the brick resets `assets/`).
    Don't overwrite App Lab's own `app.yaml` and `sketch/sketch.yaml`.
 4. Copy `python/ibm_config.example.json` to `python/ibm_config.json` and fill in your token and instance. Never publish it.
@@ -284,7 +292,10 @@ QEC_Edge_Lab_submission/
   the quantum computer is not closed (the network adds milliseconds).
 - **Too slow for superconducting qubits** (~9–15 µs vs ~1 µs per round); likely fast enough for trapped-ion and
   neutral-atom machines (rounds of roughly 100 µs to a few ms).
-- **Repetition code only** (bit flips, not phase errors); 2-D codes are the next step.
+- **Correction in software, after the run:** as in Google's and IBM's memory experiments, corrections are applied to the
+  measured result (Pauli-frame tracking), not sent back to the qubits; decoding happens after each IBM job.
+- **Repetition code only** (bit flips, not phase errors), so it does not protect an arbitrary quantum state; 2-D codes
+  (surface or colour codes) are the next step.
 - **STM32 statistics** use 400 shots per distance; full statistics (4,000) come from the laptop tool, which runs the
   same C decoder code.
 

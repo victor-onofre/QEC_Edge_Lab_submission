@@ -1,0 +1,6 @@
+name: qec_lab
+description: "QEC Edge Lab: quantum error-correction decoders (classical + on-device AI) on the UNO Q, tested on IBM quantum hardware"
+ports: []
+bricks:
+- arduino:web_ui: {}
+icon: 😀
