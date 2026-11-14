@@ -9,7 +9,7 @@ Before you start: dashboard open on the **Real-time** tab, d=11 from a saved ibm
 | 0:20–0:50 | "We ran error-correction codes on IBM's 156-qubit chips. Adding qubits pushes the logical error from 5% down to below 1 in 4,000, decoded here on the Arduino's microcontroller." | Accuracy tab: logical error vs distance |
 | 0:50–1:15 | "The board also learned things about the chips: a 1 decays 10 to 16 times faster than a 0, and one qubit flips 31% of the time. Our AI decoder, trained on the board, learns these quirks by itself." | Highlights card; AI decoder line |
 | 1:15–1:45 | "Now the hard part: speed. I shorten the time between rounds with this knob." Turn slowly past about 15 µs. | LED bars fill up, buzzer growls, dashboard turns red |
-| 1:45–2:00 | "Here is the limit of a $50 microcontroller: 15 microseconds per round. Too slow for superconducting qubits, fast enough for ion traps and neutral atoms. A full quantum control bench in your hand." | Sweep chart with the limit line |
+| 1:45–2:00 | "Here is the limit of a €60 microcontroller: about 9 microseconds per round with the AI decoder. Too slow for superconducting qubits, fast enough for ion traps and neutral atoms. A full quantum control bench in your hand." | Sweep chart with the limit line |
 
 **Backup:** if the board fails, play the screen recording of the same steps.
 
