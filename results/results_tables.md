@@ -171,3 +171,25 @@ Small MLP (inputs: detection events + final data bits, 32 hidden units, 1 output
 
 **Where it loses:** on ibm_fez at d ≥ 11 the AI has an error floor of 0.2–0.4% (2,000 training shots are too few for ~120 inputs), while graph decoders reach < 0.075%.
 
+
+## 6. Real-time limits with the AI decoder (STM32, ibm_marrakesh, d=5, 3 rounds)
+
+4,000 shots loaded into STM32 RAM (11.7 KB, 5.2 s); AI model trained on the board in 2.6 s (737 parameters;
+in-sample for this replay, so use it for timing only), MCU = Python on every shot. Limit τ* = mean decode / 3 rounds.
+
+| Decoder | Mean decode (in replay) | Limit τ* | Kept up at (max backlog) | Fell behind at (max backlog) |
+|---|---|---|---|---|
+| **AI** | 26.0 µs | **8.7 µs/round** | 10 µs (30) | 5.6 µs (2,214) |
+| UF weighted | 25.9 µs | 8.6 µs/round | 10 µs (47) | 5.6 µs (2,219) |
+| UF fast | 31.0 µs | 10.4 µs/round | 17.8 µs (15) | 10 µs (456) |
+| UF naive | 59.3 µs | 19.8 µs/round | 31.6 µs (8) | 17.8 µs (523) |
+
+The AI decoder is as fast as the fastest classical decoder on this chip while making about half the logical errors
+(d=5, cross-fitted: AI 1.8% vs weighted UF 4.2% vs best PyMatching 3.6%).
+
+## 7. Second ibm_fez run with the AI decoder on the board (job dbsa8iok09pc73avu6bg)
+
+AI decoder vs best graph decoder (all 4,000 shots, cross-fitted): d=3 1.40% vs 4.47% (3.2×), d=5 0.50% vs 1.40% (2.8×),
+d=7 0.23% vs 0.63% (2.8×), d=9 0.13% vs 0.15%; at d ≥ 11 the AI has an error floor of 0.15–0.35% while graph decoders
+reach < 0.05%. STM32 cycles per AI decode (isolated, interrupts masked): d=3 1,909 (11.9 µs), d=5 2,686 (16.8 µs),
+d=11 4,974 (31 µs), d=25 10,246 (64 µs); 0 MCU-vs-Python mismatches at every distance.

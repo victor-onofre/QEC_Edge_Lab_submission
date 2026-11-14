@@ -65,7 +65,7 @@ union-find decoder. Full tables: [`results/results_tables.md`](results/results_t
 | Worst qubit found | Qubit 82 on ibm_marrakesh: 31% error per round in \|1⟩ |
 | Weighted vs uniform union-find | Up to 36% fewer logical errors (d=9, ibm_fez) |
 | Fast vs naive union-find on the STM32 | 2.4–4× fewer cycles, identical results |
-| Real-time limit at d=11 on the STM32 | ~15 µs per round (fast UF), 41 µs (naive UF); IBM rounds take ~1 µs |
+| Real-time limit on the STM32 | d=11: ~15 µs/round (fast UF), 41 µs (naive); d=5: **8.7 µs/round for the AI decoder**; IBM rounds take ~1 µs |
 | QPU time per experiment | ~6 s for 16 circuits |
 
 ## Edge AI: a decoder that learns each chip
@@ -93,8 +93,11 @@ makes **1.7–9.5× fewer logical errors than the best graph decoder** (d = 3–
 | 7 | 1.7% (PyMatching weighted) | **0.22%** |
 | 9 | 0.47% (PyMatching weighted) | **0.05%** |
 
-Full tables for all runs: [`results/results_tables.md`](results/results_tables.md), section 5. STM32 cycles per AI
-decode are measured on the board (DWT counter) and shown on the dashboard; laptop estimate ≈ 6 µs at d=5.
+**Measured on the STM32:** training on the board takes ~2.6 s per model; an AI decode costs 1,909 cycles (11.9 µs) at
+d=3 and 2,686 (16.8 µs) at d=5 — about the same as fast union-find. In the real-time replay (ibm_marrakesh, d=5) the
+AI keeps up down to **8.7 µs per round**, tied with the fastest classical decoder, while making about half the
+logical errors. A second ibm_fez run confirms it: 2.8–3.2× fewer errors than the best graph decoder at d = 3–7.
+Full tables: [`results/results_tables.md`](results/results_tables.md), sections 5–7.
 
 Libraries considered: TensorFlow Lite Micro (reported compile failures on the UNO Q core), Edge Impulse (supports
 the UNO Q but needs a Studio/west build), emlearn (needs scikit-learn/Keras for training). A hand-written C MLP whose
