@@ -23,7 +23,7 @@ technical details for experts are at the end.
 ## Quantum computing in one minute (no physics needed)
 
 **Quantum bits are fragile.** A normal computer bit is a 0 or a 1 and stays that way. A quantum bit (*qubit*) is so
-sensitive that heat, stray signals or simply time make it flip by accident — on today's machines, a few times in
+sensitive that heat, stray signals or simply time make it flip by accident, on today's machines, a few times in
 every hundred operations. Left alone, errors pile up and the result is garbage.
 
 **The fix: redundancy and voting.** Imagine whispering a message across a noisy room. To be safe you say it with
@@ -31,14 +31,14 @@ several people at once, and the listener takes the majority. Quantum error corre
 bit of information is spread over many physical qubits.
 
 **The catch: you can't just look.** Looking at a qubit destroys its quantum information. So instead, helper qubits
-ask indirect questions such as *"are these two neighbours still the same?"* — over and over, every few microseconds.
+ask indirect questions such as *"are these two neighbours still the same?"*, over and over, every few microseconds.
 The answers are clues; we call them **syndromes**.
 
 **The detective: the decoder.** A classical computer reads the stream of clues and works out *which* qubits most
 likely flipped, so they can be corrected. This program is called the **decoder**. It has to be:
 
-1. **accurate** — a wrong guess makes things worse, and
-2. **fast** — new clues arrive every round (about every microsecond on IBM machines). Like a supermarket cashier:
+1. **Accurate:**a wrong guess makes things worse, and
+2. **Fast:** new clues arrive every round (about every microsecond on IBM machines). Like a supermarket cashier:
    if customers arrive faster than the cashier serves them, the queue grows forever.
 
 **This project builds that decoder on an Arduino**, checks how accurate and how fast it is on real IBM data, and
@@ -63,21 +63,24 @@ The Arduino UNO Q is two computers on one board, and that is exactly how real qu
 ## What you see and hear in the demo
 
 1. **The scoreboard:** the dashboard shows real IBM results — as we use more qubits, the error rate drops (that's error correction working).
-2. **The AI:** a pink line on the chart — the neural network trained on the Arduino beats the classical decoders.
+2. **The AI:** a pink line on the chart, the neural network trained on the Arduino beats the classical decoders.
 3. **The speed test:** we turn the knob to send clues faster and faster. The Arduino keeps up… until about **9 microseconds per round**. Past that point the LED matrix fills with bars, the dashboard turns red and the buzzer growls: the queue of unsolved errors is exploding.
 
 ## Results in plain words
 
 ![Logical error vs distance](media/logical_error_vs_distance_ibm_fez.png)
 
-*How to read it:* left to right = more qubits protecting the information; down = fewer mistakes. Every line goes
-down, so error correction works on the real machine. The blue line is the Arduino's own decoder.
+*How to read it:* left to right = more qubits protecting the information; down = fewer mistakes. The lines go
+down, so error correction works on the real machine. **Blue** is the Arduino's classical decoder; **purple** is the
+neural network trained on the Arduino. On small codes (5–13 qubits) the AI makes about 2× fewer mistakes (1.8–2.4×) than any
+other decoder. On bigger codes it levels off at about 0.2–0.3%, where the classical decoders take over — so the best
+design uses the AI for small codes and the classical decoder for large ones.
 
 | What we found | Why it matters |
 |---|---|
 | **Error correction works on IBM's real chips:** spreading the information over 21 qubits instead of 5 cut mistakes from **4.8% to 0.075%** (64× fewer). | The core promise of quantum error correction, shown with a €60 board as the decoder. |
 | **The AI decoder makes up to 9.5× fewer mistakes** (typically 2–3×) than the best classical decoder on small and medium codes (up to 17 qubits), on two different IBM chips. | Learning from data beats hand-written rules, and it runs on the Arduino itself. |
-| **Why the AI wins:** on these chips a stored **1 fades into a 0 about 10–16× more often** than a 0 turns into a 1 (like a light bulb that dims, but never switches itself on). The AI learned this by itself from the data. | The Arduino doubles as a diagnostic tool: it discovered real physical behaviour of each chip — including one qubit that flips 31% of the time. |
+| **Why the AI wins:** on these chips a stored **1 fades into a 0 about 10–16× more often** than a 0 turns into a 1 (like a light bulb that dims, but never switches itself on). The AI learned this by itself from the data. | The Arduino doubles as a diagnostic tool: it discovered real physical behaviour of each chip, including one qubit that flips 31% of the time. |
 | **Speed limit: about 9 microseconds per round** for the AI decoder on the Arduino, as fast as the fastest classical decoder we built. | Too slow for IBM's superconducting chips (~1 µs per round), but **fast enough for trapped-ion and neutral-atom quantum computers**, whose rounds take roughly 100 µs to a few milliseconds. |
 | **We made the classical decoder 2.4–4× faster** on the microcontroller with identical answers. | Every microsecond counts in real-time control. |
 
