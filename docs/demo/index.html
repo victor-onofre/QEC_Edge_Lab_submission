@@ -21,7 +21,7 @@
       <span class="badge"><i class="dot warm"></i>Web twin: replays real data, no board needed</span>
     </div>
     <nav class="jump">
-      <a href="#play">1 · Be the decoder</a><a href="#results">2 · Results on real chips</a><a href="#realtime">3 · Turn the knob</a>
+      <a href="#play">1 · Be the decoder</a><a href="#results">2 · Results on real chips</a><a href="#realtime">3 · Turn the knob</a><a href="#europe">4 · Why it matters for Europe</a>
       <a class="ext" href="https://github.com/victor-onofre/QEC_Edge_Lab_submission">Code and full write-up ↗</a>
     </nav>
   </div>
@@ -150,6 +150,31 @@
       The real board replays thousands of real shots from its own memory and times every decode with its cycle counter.
       IBM's superconducting chips need about 1 µs per round, too fast for a microcontroller. Neutral-atom and
       trapped-ion machines take about 1 ms per round, about 100× more time than the Arduino needs.</p>
+  </section>
+
+  <!-- 4. Europe ---------------------------------------------------------------------------------------------- -->
+  <section id="europe" class="card">
+    <div class="card-head"><div><p class="kicker">Part 4 · The Green European Renaissance</p>
+      <h2>Why it matters for Europe</h2></div></div>
+    <div class="eu-grid">
+      <div class="eu"><b class="eu-big">2–3 W</b><h3>Fewer watts</h3>
+        <p>Leading AI decoders run on data-centre GPUs (an NVIDIA H100 is rated up to 700 W). The whole UNO Q draws about
+          0.5 W idle and 2–3 W at full load, and our AI decoder fits in 8.5 KB. On slower atom and ion machines a few-watt
+          board could take over part of a GPU server's job.</p></div>
+      <div class="eu"><b class="eu-big">EU</b><h3>European and independent</h3>
+        <p>Decoding is dominated by US tech giants. Europe builds the machines this suits best: neutral atoms (Pasqal,
+          planqc), trapped ions (AQT), superconducting qubits (IQM, Finland). Open source, Italian-designed hardware,
+          learns locally, no cloud AI.</p></div>
+      <div class="eu"><b class="eu-big">€60</b><h3>People</h3>
+        <p>Universities and schools can teach quantum error correction on real quantum computers with a €60 board and a
+          free IBM account: see, hear and touch the problem.</p></div>
+      <div class="eu"><b class="eu-big">2030+</b><h3>The planet, long term</h3>
+        <p>Error-corrected quantum computers are expected to help design better batteries, cleaner fertiliser catalysts
+          and carbon-capture materials. Decoders are a prerequisite.</p></div>
+    </div>
+    <p class="note">Honest limits: power is from public measurements of the UNO Q, not yet measured during our own decoding
+      runs; custom decoder chips use far less power (milliwatts) but take years and millions to design; the
+      environmental impact is indirect and long-term.</p>
   </section>
 
   <footer>

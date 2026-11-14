@@ -19,6 +19,7 @@ technical details for experts are at the end.
 - **The Arduino fixes the errors:** its small real-time processor works out which quantum bits went wrong, and measures exactly how long that takes.
 - **Edge AI:** a small neural network trained *on the Arduino* learns the personality of each quantum chip and makes **up to 9× fewer mistakes** (typically 2–3×) than the best classical method.
 - **You can feel the limit:** turn a knob to speed up the stream of errors; the LED matrix fills up and a buzzer growls when the Arduino can no longer keep up.
+- **Greener, European, open:** a few-watt, €60 board runs an AI decoder of the kind industry runs on 700 W data-centre GPUs, and it suits the atom and ion quantum computers Europe is building ([why it matters](#the-green-european-renaissance-why-this-matters-for-europe)).
 
 ---
 
@@ -80,6 +81,38 @@ on an embedded processor next to the experiment, measured against the same real-
 **9 µs per round**: roughly 10× slower per round than the FPGA and GPU systems above, which is exactly why the
 industry builds dedicated hardware, but achieved with a €60 microcontroller you can buy in a shop and fast enough
 for trapped-ion and neutral-atom machines, whose rounds take roughly 100 µs to a few milliseconds.
+
+---
+
+## The Green European Renaissance: why this matters for Europe
+
+The challenge asks for Edge AI on the UNO Q that solves real problems, makes things greener and does not depend on
+big tech. Here is how QEC Edge Lab fits, and where it does not.
+
+**1. Decoding with a few watts instead of a data-centre GPU.** Today's leading AI decoders run on data-centre GPUs:
+Quantinuum's neural decoders use NVIDIA H100s [12], each rated at up to 700 W [17]. The whole UNO Q draws about 0.5 W
+idle and 2–3 W at full load in independent measurements [15], and our AI decoder fits in 8.5 KB on its
+microcontroller. On the slower atom and ion machines, where our decoder has about 100× more time than it needs, a
+few-watt board per group of qubits could take over part of a GPU server's job. To be fair: custom decoder chips are
+even more frugal (Riverlane's chip draws about 8 mW [16]), but they take years and millions of euros to design. Our
+approach uses a board you can buy in a shop, is reprogrammable, and retrains itself when the quantum chip's noise changes.
+
+**2. European, open and independent.** Decoding is dominated by US tech giants (Google, IBM, NVIDIA). Yet Europe
+builds exactly the kinds of quantum computers our approach suits best: neutral atoms (Pasqal in France, planqc in
+Germany) and trapped ions (AQT in Austria), alongside IQM's superconducting machines here in Finland. The EU's Quantum
+Europe Strategy (2025) aims to make Europe a quantum leader by 2030 [14]. QEC Edge Lab is open source, runs on a board
+from an Italian company, learns locally (the chip's data never leaves the board) and needs no cloud AI service.
+
+**3. People: opening the door to quantum engineering.** A university or school can teach quantum error correction on
+real quantum computers with a €60 board and a free IBM account, instead of lab equipment costing thousands. Students
+can see, hear and touch the problem. That is how Europe grows the engineers this field needs.
+
+**4. The long game for the planet.** One of the most-hoped-for uses of error-corrected quantum computers is simulating
+molecules and materials: better batteries, catalysts for cleaner fertiliser production, materials for carbon capture.
+None of that works without fast, accurate decoders. This impact is long-term and indirect, and we say so plainly.
+
+**What we have not shown yet:** we have not measured the board's power during our own decoding runs (next step: a
+USB power meter), and the energy benefit is a projection for atom and ion machines, not a tested result.
 
 ---
 
@@ -327,6 +360,8 @@ QEC_Edge_Lab_submission/
   (surface or colour codes) are the next step.
 - **STM32 statistics** use 400 shots per distance; full statistics (4,000) come from the laptop tool, which runs the
   same C decoder code.
+- **Energy and impact claims are projections:** the board's power during our decoding runs is not measured yet (public
+  measurements: 0.5–3 W), the environmental benefit is indirect and long-term, and custom decoder chips use far less power.
 
 ## Credits and tools
 
@@ -350,3 +385,7 @@ experiments.
 11. Bluvstein et al. (Harvard, QuEra, MIT) — *A fault-tolerant neutral-atom architecture for universal quantum computation*, Nature (Nov 2025). arXiv: https://arxiv.org/abs/2506.20661
 12. Quantum Computing Report — *Quantinuum demonstrates 99.9995% logical memory fidelity on Helios trapped-ion processor*. https://quantumcomputingreport.com/quantinuum-demonstrates-99-9995-logical-memory-fidelity-on-helios-trapped-ion-processor/
 13. Atom Computing — *Quantum error correction with toric code*. https://atom-computing.com/quantum-error-correction-with-toric-code/
+14. European Commission — *Quantum Europe Strategy* (2 July 2025). https://digital-strategy.ec.europa.eu/en/library/quantum-europe-strategy
+15. Jeff Geerling — *The Arduino Uno Q is a weird hybrid SBC* (power measurements: ~0.5 W idle, 2–3 W at full load). https://www.jeffgeerling.com/blog/2025/arduino-uno-q-weird-hybrid-sbc
+16. Barber et al. (Riverlane) — *A real-time, scalable, fast and highly resource efficient decoder for a quantum computer* (ASIC: ~8 mW). https://arxiv.org/abs/2309.05558
+17. NVIDIA — *H100 Tensor Core GPU* (SXM: up to 700 W). https://www.nvidia.com/en-us/data-center/h100/

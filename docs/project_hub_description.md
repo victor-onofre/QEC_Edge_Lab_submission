@@ -5,7 +5,7 @@ SHORT DESCRIPTION (one line)
 An Arduino UNO Q decodes errors from IBM's real quantum computers in real time, with an on-device AI decoder that makes up to 9× fewer mistakes.
 
 TAGS
-Junction Finland 2026, Arduino UNO Q, Modulino, Edge AI, Quantum computing
+Junction Finland 2026, Arduino UNO Q, Modulino, Edge AI, Quantum computing, Green European Renaissance
 
 ---------------------------------------------------------------------------
 
@@ -27,6 +27,13 @@ Detecting or correcting? As in Google's and IBM's error-correction experiments, 
 
 Why it matters
 Decoding is one of the hardest engineering problems on the road to useful quantum computers. Google, Google DeepMind (AlphaQubit), Riverlane, NVIDIA and IBM are all building dedicated FPGA, GPU or neural-network decoders for it. QEC Edge Lab explores the same two ideas, neural-network decoding and putting the decoder close to the experiment, on a €60 board.
+
+Why it matters for Europe: the Green European Renaissance
+- Fewer watts: today's leading AI decoders run on data-centre GPUs (NVIDIA H100, up to 700 W each). The whole UNO Q draws about 0.5 W idle and 2–3 W at full load, and our AI decoder fits in 8.5 KB on its microcontroller. On the slower atom and ion quantum computers, a few-watt board could take over part of a GPU server's job. Custom decoder chips use even less power, but take years and millions of euros to design; ours is a board from a shop that retrains itself.
+- European and independent: decoding is dominated by US tech giants, yet Europe builds exactly the machines our approach suits: neutral atoms (Pasqal, planqc), trapped ions (AQT) and superconducting qubits (IQM, here in Finland). The EU's Quantum Europe Strategy aims to make Europe a quantum leader by 2030. QEC Edge Lab is open source, runs on Italian-designed hardware, learns locally and needs no cloud AI.
+- People: universities and schools can teach quantum error correction on real quantum computers for €60 and a free IBM account.
+- The planet, long term: error-corrected quantum computers are expected to help design better batteries, cleaner fertiliser catalysts and carbon-capture materials. That impact is indirect and long-term, and decoders are a prerequisite.
+- Not shown yet: we have not measured the board's power during our own decoding runs, and the energy benefit is a projection, not a tested result.
 
 What we built
 The Arduino UNO Q is two computers on one board, exactly like the control system of a real quantum computer:
@@ -60,6 +67,7 @@ Honest limitations
 - The real-time test replays real IBM data on the Arduino; the timing is real, but the loop with the quantum computer is not closed (the internet adds milliseconds).
 - About 9 µs per round is too slow for superconducting qubits; it would likely be fast enough for neutral-atom and trapped-ion machines.
 - Corrections are applied in software to the measured result (as in Google's and IBM's experiments), not sent back to the qubits, and decoding happens after each IBM job.
+- Energy and impact claims are projections: power during our runs is not measured yet, and custom decoder chips use far less power.
 - Repetition code only: it protects against bit flips, not phase errors, so it does not protect an arbitrary quantum state; 2-D codes are the next step.
 - On large codes the AI decoder hits an accuracy floor of about 0.2–0.3%, where the classical decoder is better, so the best design combines both.
 
