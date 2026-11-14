@@ -95,6 +95,24 @@ The Arduino UNO Q is two computers on one board, and that is exactly how real qu
 | **Modulino Knob** | Sets how fast new error clues arrive | The speed dial |
 | **Modulino Buzzer** | Growls when the decoder falls behind | The alarm |
 
+### How the AI learns, on the Arduino itself
+
+**In one line:** the Arduino teaches itself, in about 3 seconds, how this particular quantum chip tends to fail,
+and we only ever score it on data it has never seen.
+
+- **Trained in plain Python (numpy).** No PyTorch, TensorFlow or GPU: the training code is about 25 hand-written
+  lines that run on the Linux side of the board. Big AI frameworks would be heavy to install on a 2 GB board and are
+  overkill for a network this small.
+- **Trained on the board, in about 2.6 seconds per model.** After each IBM job, the Arduino's Linux side trains one
+  small network for each code size, converts it to whole numbers and sends it to the microcontroller, which then
+  runs it using only additions. The microcontroller gives exactly the same answer as the Python version, bit for bit.
+  The chip's data never leaves the board: this is *edge AI*.
+- **Tested only on shots it never saw.** A decoder scored on the same data it learned from could just memorise it
+  and look better than it is. So we split the shots into two halves: one network learns from the first half and is
+  scored on the second, another does the reverse. Every shot is judged by a network that never saw it.
+- **It cannot cheat.** The right answer (whether a 0 or a 1 was stored) is used only to teach the network, never
+  given to it as an input. Like a real decoder, it has to work the answer out from the clues.
+
 ## What you see and hear in the demo
 
 1. **The scoreboard:** the dashboard shows real IBM results — as we use more qubits, the error rate drops (that's error correction working).
@@ -213,6 +231,15 @@ ours is, adapts to whatever the dominant quirk is, without hand-written rules.
 
 - **Model:** one hidden layer (detection events + final data bits → 32 ReLU units → 1 output; 400–4,000 parameters),
   trained in pure numpy on the board's Linux side (~2.6 s per model on the board), on held-out shots.
+- **Training (`code/qec_lab/python/qec_ai.py`):** inputs are the (R+1)(d−1) detection events plus the d final data bits
+  (21 binary inputs at d=5, R=3; up to 128). Target: whether data qubit 0 must be flipped. Float32 training with
+  logistic loss and Adam (lr 3e-3, L2 1e-3), 2,000 steps on mini-batches of 128 shots drawn from both logical states;
+  a single network serves both states. No framework: forward pass, backpropagation and Adam are written in numpy.
+- **Which shots train which model:** the model uploaded to the STM32 is trained on the back part of each state's shots,
+  and the STM32 decodes the front part, which the model never saw. The reported full-statistics AI error rate uses
+  2-fold cross-fitting over all shots (`qec_ai.cross_val`): a random split into two halves, train on one and score the
+  other, then swap, so every shot is decoded exactly once by a model that never saw it. The same split is used in the
+  laptop tool `code/qec_lab/tools/qec_offline.py`, where the board's C inference is checked against Python on every shot.
 - **Inference on the STM32:** weights quantised to 15-bit integers, sent over Bridge with a checksum (a d=5 model is
   47 calls); integer arithmetic, **bit-exact with Python on every shot tested**; ~8.5 KB RAM. The first layer is
   additions only, because the inputs are bits.
