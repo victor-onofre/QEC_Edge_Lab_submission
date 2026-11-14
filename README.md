@@ -41,6 +41,8 @@ likely flipped, so they can be corrected. This program is called the **decoder**
 2. **Fast:** new clues arrive every round (about every microsecond on IBM machines). Like a supermarket cashier:
    if customers arrive faster than the cashier serves them, the queue grows forever.
 
+![How quantum error correction works](media/how_error_correction_works.png)
+
 **This project builds that decoder on an Arduino**, checks how accurate and how fast it is on real IBM data, and
 uses AI to make it smarter.
 
@@ -110,6 +112,47 @@ design uses the AI for small codes and the classical decoder for large ones.
 | **Why the AI wins:** on these chips a stored **1 fades into a 0 about 10–16× more often** than a 0 turns into a 1 (like a light bulb that dims, but never switches itself on). The AI learned this by itself from the data. | The Arduino doubles as a diagnostic tool: it discovered real physical behaviour of each chip, including one qubit that flips 31% of the time. |
 | **Speed limit: about 9 microseconds per round** for the AI decoder on the Arduino, as fast as the fastest classical decoder we built. | Too slow for IBM's superconducting chips (~1 µs per round), but **fast enough for trapped-ion and neutral-atom quantum computers**, whose rounds take roughly 100 µs to a few milliseconds. |
 | **We made the classical decoder 2.4–4× faster** on the microcontroller with identical answers. | Every microsecond counts in real-time control. |
+
+## Why this could work on neutral-atom and trapped-ion quantum computers
+
+There are several ways to build a qubit. IBM and Google use **superconducting circuits**: very fast, about one
+error-correction round per microsecond, which is why our Arduino (about 9 µs per round) is too slow for them.
+Two other leading approaches are much slower per round, and that changes the picture:
+
+- **Neutral atoms** (single atoms held by laser "tweezers"; QuEra, Atom Computing, Pasqal) and
+- **Trapped ions** (charged atoms held by electric fields; Quantinuum, IonQ).
+
+Their qubits are very stable, but gates, measurements and moving atoms or ions around take much longer: roughly
+**1 millisecond per round**, and trapped-ion design models assume 1–5 ms [9][10].
+
+![Time budget by platform](media/time_budget_by_platform.png)
+
+**1. There is time to spare.** At about 1 ms per round, the decoder has roughly **100 times more time** than our
+Arduino needs. A €60 microcontroller could keep up, with room left for bigger codes or for decoding several
+logical qubits at once.
+
+**2. The industry is already using AI decoders on these machines.** Harvard, QuEra and MIT reached
+"below-threshold" error correction on 448 neutral atoms using **machine-learning decoding** together with detection
+of lost atoms (Nature, 2025) [11]. Quantinuum reports **neural-network decoders** for its Helios trapped-ion computer,
+running at 0.2–0.5 ms per round on NVIDIA H100 GPUs [12]. Our project shows that this kind of decoder can also
+run on a cheap, low-power embedded chip.
+
+**3. Their errors have their own personality, which an AI decoder can learn.** On IBM chips, our AI decoder learned that
+a stored 1 fades into a 0 far more often than the reverse. Atoms and ions have different quirks; for example, an
+atom can simply disappear, which the hardware can detect [11][13]. A decoder trained on the device's own data, as
+ours is, adapts to whatever the dominant quirk is, without hand-written rules.
+
+**What we have not shown yet (honest limits):**
+
+- We have not run on an ion or atom machine. Our measured data come from IBM's superconducting chips.
+- Those machines mostly use 2-D codes (surface and colour codes); our decoders handle the 1-D repetition code and
+  would need extending.
+- Round times are improving fast (Atom Computing reports up to 90 rounds of error correction with atom
+  replacement [13]; other groups report large increases in cycle rate), so the 100× margin will shrink over time.
+- Real control systems also need time to move data in and out; our numbers cover the decoding itself.
+
+**Next steps on this path:** noise models that mimic atoms and ions (including lost atoms), a decoder that uses
+"this atom is missing" flags (cheap to add to union-find), and tests with data from vendor emulators.
 
 ## Who it helps
 
@@ -262,3 +305,8 @@ experiments.
 6. The Quantum Insider — *Riverlane publishes hardware decoder for real-time quantum error correction* (Dec 2025). https://thequantuminsider.com/2025/12/18/riverlane-hardware-decoder-real-time-qec/
 7. NVIDIA — *CUDA-Q QEC 0.6 enables real-time QEC with NVQLink* (Apr 2026). https://nvidia.github.io/cuda-quantum/blogs/blog/2026/04/14/cudaq-qec-0.6/
 8. IBM Quantum — *Real-time decoding of the gross code memory with FPGAs* (arXiv 2510.21600, 2025). https://arxiv.org/abs/2510.21600 ; algorithm: *Improved belief propagation is sufficient for real-time decoding of quantum memory*, https://arxiv.org/abs/2506.01779
+9. IonQ real-time decoding study, modelling a trapped-ion architecture with a 1–5 ms cycle time (coverage). https://postquantum.com/engineering-news/ionq-real-time-decoder-cpu/
+10. *The classical stack behind quantum error correction* (overview citing ~1 µs rounds for superconducting qubits and ~1 ms for trapped ions and neutral atoms). https://postquantum.com/quantum-computing/qec-classical-stack-infrastructure/
+11. Bluvstein et al. (Harvard, QuEra, MIT) — *A fault-tolerant neutral-atom architecture for universal quantum computation*, Nature (Nov 2025). arXiv: https://arxiv.org/abs/2506.20661
+12. Quantum Computing Report — *Quantinuum demonstrates 99.9995% logical memory fidelity on Helios trapped-ion processor*. https://quantumcomputingreport.com/quantinuum-demonstrates-99-9995-logical-memory-fidelity-on-helios-trapped-ion-processor/
+13. Atom Computing — *Quantum error correction with toric code*. https://atom-computing.com/quantum-error-correction-with-toric-code/
