@@ -46,6 +46,33 @@ uses AI to make it smarter.
 
 ---
 
+## Why this matters: the race to build fast decoders
+
+Decoding is one of the hardest open engineering problems on the road to useful quantum computers. Riverlane, a
+company that builds decoders, calls the decoder "the beating heart of QEC" [1]. The biggest players are all
+building dedicated hardware for it:
+
+| Who | What they built | How fast |
+|---|---|---|
+| **Google Quantum AI** (Nature, 2024) | First error correction "below threshold" on its Willow chip, with a real-time decoder [2] | 63 µs average decoder latency, for a 1.1 µs error-correction cycle |
+| **Google DeepMind — AlphaQubit** (Nature, 2024) | A neural-network decoder that beat classical decoders on Google's real hardware [3]; a 2025 successor targets real-time speed [4] | Successor reported under 1 µs per cycle on commercial hardware [4] |
+| **Riverlane — Deltaflow 2** | A decoder on FPGA chips, tested live with Rigetti's quantum computer [5][6] | 0.44–0.79 µs per round; about 16 µs end-to-end for the whole system [6] |
+| **NVIDIA — CUDA-Q QEC + NVQLink** | GPU decoders wired to quantum control electronics, including an AI pre-decoder in front of a classical one [7] | 2.1 µs per round for the AI-assisted pipeline in a surface-code test; under 4 µs FPGA–GPU round trip [7] |
+| **IBM — Relay-BP on FPGA** | A decoder for IBM's next-generation codes, built to keep up with a 1 µs measurement cycle [8] | 24 ns per algorithm iteration on an AMD FPGA [8] |
+
+These numbers measure different things (per round, end-to-end, per iteration), so they are not directly
+comparable. The message is the same everywhere: **decoders must be accurate, fast and small**, and the industry is
+spending FPGAs, GPUs and custom chips to get there. Two trends stand out: **neural-network decoders** (AlphaQubit,
+NVIDIA's AI pre-decoder) and **putting the decoder close to the quantum computer**.
+
+**QEC Edge Lab explores the same two ideas on a €60 board:** a neural-network decoder trained on the device, running
+on an embedded processor next to the experiment, measured against the same real-time limit. Our Arduino reaches about
+**9 µs per round**: roughly 10× slower per round than the FPGA and GPU systems above, which is exactly why the
+industry builds dedicated hardware, but achieved with a €60 microcontroller you can buy in a shop and fast enough
+for trapped-ion and neutral-atom machines, whose rounds take roughly 100 µs to a few milliseconds.
+
+---
+
 ## What we built
 
 ![Architecture](media/architecture.png)
@@ -224,3 +251,14 @@ Arduino UNO Q, Arduino App Lab, Modulino Knob and Buzzer; IBM Quantum (Qiskit, q
 PyMatching (laptop reference decoder); socket.io client 4.7.5 (dashboard). Union-find decoding after
 Delfosse & Nickerson; edge-probability estimation after the "p_ij" correlation method used in repetition-code
 experiments.
+
+## References
+
+1. Riverlane — *Why the decoder is the beating heart of QEC*. https://www.riverlane.com/blog/why-the-decoder-is-the-beating-heart-of-qec
+2. Google Quantum AI and collaborators — *Quantum error correction below the surface code threshold*, Nature 638, 920–926 (2025). arXiv: https://arxiv.org/abs/2408.13687
+3. Bausch et al. (Google DeepMind & Google Quantum AI) — *Learning high-accuracy error decoding for quantum processors* (AlphaQubit), Nature (2024). Coverage: https://thedebrief.org/google-deepminds-breakthrough-alphaqubit-closing-in-on-the-holy-grail-of-quantum-computing/
+4. Senior et al. — *A scalable and real-time neural decoder for topological quantum codes* (preprint, 2025). https://arxiv.org/abs/2512.07737
+5. Riverlane — *Introducing the world's first low-latency QEC experiment*. https://www.riverlane.com/news/introducing-the-world-s-first-low-latency-qec-experiment
+6. The Quantum Insider — *Riverlane publishes hardware decoder for real-time quantum error correction* (Dec 2025). https://thequantuminsider.com/2025/12/18/riverlane-hardware-decoder-real-time-qec/
+7. NVIDIA — *CUDA-Q QEC 0.6 enables real-time QEC with NVQLink* (Apr 2026). https://nvidia.github.io/cuda-quantum/blogs/blog/2026/04/14/cudaq-qec-0.6/
+8. IBM Quantum — *Real-time decoding of the gross code memory with FPGAs* (arXiv 2510.21600, 2025). https://arxiv.org/abs/2510.21600 ; algorithm: *Improved belief propagation is sufficient for real-time decoding of quantum memory*, https://arxiv.org/abs/2506.01779
