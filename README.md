@@ -6,6 +6,10 @@
 > on the fly. We built that "error fixer" on an Arduino UNO Q, tested it on real IBM quantum computers, and taught it
 > with on-device AI to fix errors up to 9.5× better than the standard method.
 
+**Watch the 2-minute demo video: [youtube.com/watch?v=pFP3tOLFYHk](https://www.youtube.com/watch?v=pFP3tOLFYHk)**
+
+[![Watch the demo video](https://img.youtube.com/vi/pFP3tOLFYHk/hqdefault.jpg)](https://www.youtube.com/watch?v=pFP3tOLFYHk)
+
 **Try it in your browser: [interactive demo](https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/)**: be the decoder on real IBM shots, compare decoders on real chips, and turn a virtual knob to see when the Arduino falls behind (a web twin that replays real data and the Arduino's measured timings).
 
 ![The Arduino UNO Q with the Modulino Knob and Buzzer](media/board.jpg)
@@ -151,6 +155,8 @@ and we only ever score it on data it has never seen.
   given to it as an input. Like a real decoder, it has to work the answer out from the clues.
 
 ## What you see and hear in the demo
+
+Video: https://www.youtube.com/watch?v=pFP3tOLFYHk
 
 1. **The scoreboard:** the dashboard shows real IBM results — as we use more qubits, the error rate drops (that's error correction working).
 2. **The AI:** a pink line on the chart, the neural network trained on the Arduino beats the classical decoders.
