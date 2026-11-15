@@ -8,6 +8,7 @@
 \usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage{qrcode}
 
 % ---- look (matches the demo video) ---------------------------------------------------------------
 \definecolor{navy}{RGB}{10,31,77}
@@ -227,7 +228,7 @@
       \item Small network: clues + final readout $\to$ 32 neurons $\to$ ``flip or not''.
       \item Weights become 15-bit integers; the STM32 runs it with \hl{additions only}, bit-exact with Python, $\sim$8.5\,KB RAM.
       \item \hl{Honest test:} scored only on shots it never saw (2-fold cross-fitting); the right answer is never an input.
-      \item \hl{Why it wins:} a stored 1 decays to 0 about 10--16$\times$ more often than the reverse. The AI learned this by itself.
+      \item \hl{Why it wins:} a stored 1 decays to 0 roughly 3--20$\times$ more often than the reverse (depends on chip and qubit). The AI learned this by itself.
     \end{itemize}
     \column{0.40\textwidth}
     \shot{ai_result.jpg}\\[0.2em]\dimnote{Dashboard: the AI decoder (pink) vs classical decoders}
@@ -238,7 +239,7 @@
 \begin{frame}{Results on real IBM quantum computers}\framesubtitle{Results}
   \begin{columns}[c]
     \column{0.52\textwidth}\centering
-    \colorbox{white}{\includegraphics[width=0.93\linewidth]{figures/logical_error_vs_distance_ibm_fez.png}}\\[0.6em]
+    \colorbox{white}{\includegraphics[width=0.93\linewidth]{figures/logical_error_vs_distance_ibm_marrakesh.png}}\\[0.6em]
     {\scriptsize
     \begin{tabular}{lcc}\toprule
       ibm\_marrakesh & best graph decoder & \textbf{AI} \\\midrule
@@ -249,10 +250,10 @@
     \column{0.45\textwidth}
     \small
     \begin{itemize}\setlength\itemsep{0.5em}
-      \item \good{Error correction works:} 5 $\to$ 21 qubits cut mistakes from 4.8\% to 0.075\% (64$\times$).
-      \item \good{AI decoder:} up to 9.5$\times$ fewer errors (typically 2--3$\times$) than the best classical decoder, up to 17 qubits, on two chips.
+      \item \good{Error correction works:} on ibm\_fez, 5 $\to$ 21 qubits cut mistakes from 4.8\% to 0.075\% (64$\times$).
+      \item \good{AI decoder:} up to 9.5$\times$ fewer errors (typically 2--3$\times$) than the best classical decoder: up to 17 qubits on ibm\_marrakesh, up to 13 on ibm\_fez.
       \item The Arduino found a qubit that flips 31\% of the time.
-      \item Classical union-find made 2.4--4$\times$ faster on the STM32, identical answers.
+      \item Classical union-find made 1.6--4$\times$ faster on the STM32, identical answers.
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -280,7 +281,7 @@
     \column{0.58\textwidth}
     \begin{itemize}\setlength\itemsep{0.7em}
       \item Atom and ion quantum computers take about 1\,ms per round: \good{100$\times$ more time} than our Arduino needs [11,12].
-      \item Open source, local AI, no cloud: decoding that does not depend on big tech.
+      \item Open source; the decoder and its AI run locally, with no cloud AI service.
       \item The EU Quantum Europe Strategy aims for quantum leadership by 2030 [13].
       \item \dimnote{Next: test on atom and ion machines, and measure the board's power.}
     \end{itemize}
@@ -308,14 +309,17 @@
 
 % ==================================================================================================
 \begin{frame}{Try it}\framesubtitle{Links}
-  \centering\vspace{1em}
-  {\Large\bfseries A few watts, open, European:\\[0.2em] \hl{decoders for Europe's quantum computers}}\\[2em]
-  \begin{tabular}{rl}
-    \dimnote{Interactive demo} & \hl{victor-onofre.github.io/QEC\_Edge\_Lab\_submission} \\[0.5em]
-    \dimnote{Code, data, write-up} & \hl{github.com/victor-onofre/QEC\_Edge\_Lab\_submission} \\[0.5em]
-    \dimnote{Hardware} & Arduino UNO Q (\eur59.90), Modulino Knob, Modulino Buzzer \\[0.5em]
-    \dimnote{Software} & Arduino App Lab, Qiskit, IBM Quantum Open Plan, numpy \\
-  \end{tabular}
+  \begin{columns}[c]
+    \column{0.66\textwidth}
+    {\Large\bfseries A few watts, open, European:\\[0.2em] \hl{decoders for Europe's quantum computers}}\\[1.4em]
+    {\small
+    \dimnote{Interactive demo}\\ \hl{victor-onofre.github.io/QEC\_Edge\_Lab\_submission}\\[0.6em]
+    \dimnote{Code and data}\\ \hl{github.com/victor-onofre/QEC\_Edge\_Lab\_submission}\\[0.6em]
+    \dimnote{Hardware and software}\\ Arduino UNO Q (\eur59.90), Modulino Knob and Buzzer, App Lab, Qiskit, IBM Quantum (free plan), numpy}
+    \column{0.3\textwidth}\centering
+    \colorbox{white}{\color{black}\qrcode[height=3.4cm]{https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/}}\\[0.5em]
+    \dimnote{Scan: interactive demo}
+  \end{columns}
 \end{frame}
 
 % ==================================================================================================

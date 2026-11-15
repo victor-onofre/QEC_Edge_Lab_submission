@@ -1,12 +1,14 @@
 # QEC Edge Lab: €60 Arduino that corrects real quantum computer errors
 
-**Junction Finland 2026 · Best use of Arduino UNO Q** · tags: Junction Finland 2026, Arduino UNO Q, Modulino, Edge AI, Quantum computing
+**Junction Finland 2026 · Arduino challenge: The Green European Renaissance** · tags: Junction Finland 2026, Arduino UNO Q, Modulino, Edge AI, Quantum computing
 
 > **In one sentence:** quantum computers make mistakes all the time, and a fast classical computer has to fix them
 > on the fly. We built that "error fixer" on an Arduino UNO Q, tested it on real IBM quantum computers, and taught it
 > with on-device AI to fix errors up to 9.5× better than the standard method.
 
 **Try it in your browser: [interactive demo](https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/)**: be the decoder on real IBM shots, compare decoders on real chips, and turn a virtual knob to see when the Arduino falls behind (a web twin that replays real data and the Arduino's measured timings).
+
+![The Arduino UNO Q with the Modulino Knob and Buzzer](media/board.jpg)
 
 **No quantum background needed to read this page.** The first part explains everything in plain words; the
 technical details for experts are at the end.
@@ -17,17 +19,49 @@ technical details for experts are at the end.
 
 - **Real quantum hardware:** the Arduino sends experiments to IBM's 156-qubit quantum computers over the internet (free account).
 - **The Arduino fixes the errors:** its small real-time processor works out which quantum bits went wrong, and measures exactly how long that takes.
-- **Edge AI:** a small neural network trained *on the Arduino* learns the personality of each quantum chip and makes **up to 9× fewer mistakes** (typically 2–3×) than the best classical method.
+- **Edge AI:** a small neural network trained *on the Arduino* learns the personality of each quantum chip and makes **up to 9.5× fewer mistakes** (typically 2–3×) than the best classical method.
 - **You can feel the limit:** turn a knob to speed up the stream of errors; the LED matrix fills up and a buzzer growls when the Arduino can no longer keep up.
-- **Greener, European, open:** a few-watt, €60 board runs an AI decoder of the kind industry runs on 700 W data-centre GPUs, and it suits the atom and ion quantum computers Europe is building ([why it matters](#the-green-european-renaissance-why-this-matters-for-europe)).
+- **Greener, European, open:** a few-watt, €60 board runs a small neural-network decoder; industry runs much larger ones on 700 W data-centre GPUs, and it suits the atom and ion quantum computers Europe is building ([why it matters](#the-green-european-renaissance-why-this-matters-for-europe)).
+
+---
+
+## The Green European Renaissance: why this matters for Europe
+
+The challenge asks for Edge AI on the UNO Q that solves real problems, makes things greener and does not depend on
+big tech. Here is how QEC Edge Lab fits, and where it does not.
+
+**1. Decoding with a few watts instead of a data-centre GPU.** Today's leading AI decoders run on data-centre GPUs:
+Quantinuum's neural decoders use NVIDIA H100s [12], each rated at up to 700 W [17]. The whole UNO Q draws about 0.5 W
+idle and 2–3 W at full load in independent measurements [15], and our AI decoder fits in 8.5 KB on its
+microcontroller. On the slower atom and ion machines, where our decoder has about 100× more time than it needs, a
+few-watt board per group of qubits could take over part of a GPU server's job. To be fair: custom decoder chips are
+even more frugal (Riverlane's chip draws about 8 mW [16]), but they take years and millions of euros to design. Our
+approach uses a board you can buy in a shop, is reprogrammable, and retrains itself when the quantum chip's noise changes.
+
+**2. European, open and independent.** Decoding is dominated by US tech giants (Google, IBM, NVIDIA). Yet Europe
+builds exactly the kinds of quantum computers our approach suits best: neutral atoms (Pasqal in France, planqc in
+Germany) and trapped ions (AQT in Austria), alongside IQM's superconducting machines here in Finland. The EU's Quantum
+Europe Strategy (2025) aims to make Europe a quantum leader by 2030 [14]. QEC Edge Lab is open source, runs on a board
+designed in Italy by Arduino, learns locally (the chip's data never leaves the board) and needs no cloud AI service.
+
+**3. People: opening the door to quantum engineering.** A university or school can teach quantum error correction on
+real quantum computers with a €60 board and a free IBM account, instead of lab equipment costing thousands. Students
+can see, hear and touch the problem. That is how Europe grows the engineers this field needs.
+
+**4. The long game for the planet.** One of the most-hoped-for uses of error-corrected quantum computers is simulating
+molecules and materials: better batteries, catalysts for cleaner fertiliser production, materials for carbon capture.
+None of that works without fast, accurate decoders. This impact is long-term and indirect, and we say so plainly.
+
+**What we have not shown yet:** we have not measured the board's power during our own decoding runs (next step: a
+USB power meter), and the energy benefit is a projection for atom and ion machines, not a tested result.
 
 ---
 
 ## Quantum computing in one minute (no physics needed)
 
 **Quantum bits are fragile.** A normal computer bit is a 0 or a 1 and stays that way. A quantum bit (*qubit*) is so
-sensitive that heat, stray signals or simply time make it flip by accident, on today's machines, a few times in
-every hundred operations. Left alone, errors pile up and the result is garbage.
+sensitive that heat, stray signals or simply time make it flip by accident, on today's machines, between once in a hundred and once in
+a thousand operations. Left alone, errors pile up and the result is garbage.
 
 **The fix: redundancy and voting.** Imagine whispering a message across a noisy room. To be safe you say it with
 several people at once, and the listener takes the majority. Quantum error correction does the same: one "logical"
@@ -40,7 +74,7 @@ The answers are clues; we call them **syndromes**.
 **The detective: the decoder.** A classical computer reads the stream of clues and works out *which* qubits most
 likely flipped, so they can be corrected. This program is called the **decoder**. It has to be:
 
-1. **Accurate:**a wrong guess makes things worse, and
+1. **Accurate:** a wrong guess makes things worse, and
 2. **Fast:** new clues arrive every round (about every microsecond on IBM machines). Like a supermarket cashier:
    if customers arrive faster than the cashier serves them, the queue grows forever.
 
@@ -84,38 +118,6 @@ for trapped-ion and neutral-atom machines, whose rounds take roughly 100 µs to 
 
 ---
 
-## The Green European Renaissance: why this matters for Europe
-
-The challenge asks for Edge AI on the UNO Q that solves real problems, makes things greener and does not depend on
-big tech. Here is how QEC Edge Lab fits, and where it does not.
-
-**1. Decoding with a few watts instead of a data-centre GPU.** Today's leading AI decoders run on data-centre GPUs:
-Quantinuum's neural decoders use NVIDIA H100s [12], each rated at up to 700 W [17]. The whole UNO Q draws about 0.5 W
-idle and 2–3 W at full load in independent measurements [15], and our AI decoder fits in 8.5 KB on its
-microcontroller. On the slower atom and ion machines, where our decoder has about 100× more time than it needs, a
-few-watt board per group of qubits could take over part of a GPU server's job. To be fair: custom decoder chips are
-even more frugal (Riverlane's chip draws about 8 mW [16]), but they take years and millions of euros to design. Our
-approach uses a board you can buy in a shop, is reprogrammable, and retrains itself when the quantum chip's noise changes.
-
-**2. European, open and independent.** Decoding is dominated by US tech giants (Google, IBM, NVIDIA). Yet Europe
-builds exactly the kinds of quantum computers our approach suits best: neutral atoms (Pasqal in France, planqc in
-Germany) and trapped ions (AQT in Austria), alongside IQM's superconducting machines here in Finland. The EU's Quantum
-Europe Strategy (2025) aims to make Europe a quantum leader by 2030 [14]. QEC Edge Lab is open source, runs on a board
-from an Italian company, learns locally (the chip's data never leaves the board) and needs no cloud AI service.
-
-**3. People: opening the door to quantum engineering.** A university or school can teach quantum error correction on
-real quantum computers with a €60 board and a free IBM account, instead of lab equipment costing thousands. Students
-can see, hear and touch the problem. That is how Europe grows the engineers this field needs.
-
-**4. The long game for the planet.** One of the most-hoped-for uses of error-corrected quantum computers is simulating
-molecules and materials: better batteries, catalysts for cleaner fertiliser production, materials for carbon capture.
-None of that works without fast, accurate decoders. This impact is long-term and indirect, and we say so plainly.
-
-**What we have not shown yet:** we have not measured the board's power during our own decoding runs (next step: a
-USB power meter), and the energy benefit is a projection for atom and ion machines, not a tested result.
-
----
-
 ## What we built
 
 ![Architecture](media/architecture.png)
@@ -154,23 +156,30 @@ and we only ever score it on data it has never seen.
 2. **The AI:** a pink line on the chart, the neural network trained on the Arduino beats the classical decoders.
 3. **The speed test:** we turn the knob to send clues faster and faster. The Arduino keeps up… until about **9 microseconds per round**. Past that point the LED matrix fills with bars, the dashboard turns red and the buzzer growls: the queue of unsolved errors is exploding.
 
+![The dashboard in live mode: the decoder is falling behind](media/falling_behind.jpg)
+
 ## Results in plain words
 
-![Logical error vs distance](media/logical_error_vs_distance_ibm_fez.png)
+![Logical error vs distance on ibm_marrakesh](media/logical_error_vs_distance_ibm_marrakesh.png)
 
 *How to read it:* left to right = more qubits protecting the information; down = fewer mistakes. The lines go
 down, so error correction works on the real machine. **Blue** is the Arduino's classical decoder; **purple** is the
-neural network trained on the Arduino. On small codes (5–13 qubits) the AI makes about 2× fewer mistakes (1.8–2.4×) than any
-other decoder. On bigger codes it levels off at about 0.2–0.3%, where the classical decoders take over — so the best
+neural network trained on the Arduino. On this chip (ibm_marrakesh) the AI makes fewer mistakes than every other
+decoder at every size shown: 2× fewer with 9 qubits and up to 9.5× fewer with 17 qubits.
+
+**It does not always win.** On a second chip (ibm_fez, below) the AI leads on small codes (5–13 qubits, about 2× fewer
+mistakes) but levels off at about 0.2–0.3% on bigger codes, where the classical decoders take over. So the best
 design uses the AI for small codes and the classical decoder for large ones.
+
+![Logical error vs distance on ibm_fez](media/logical_error_vs_distance_ibm_fez.png)
 
 | What we found | Why it matters |
 |---|---|
-| **Error correction works on IBM's real chips:** spreading the information over 21 qubits instead of 5 cut mistakes from **4.8% to 0.075%** (64× fewer). | The core promise of quantum error correction, shown with a €60 board as the decoder. |
-| **The AI decoder makes up to 9.5× fewer mistakes** (typically 2–3×) than the best classical decoder on small and medium codes (up to 17 qubits), on two different IBM chips. | Learning from data beats hand-written rules, and it runs on the Arduino itself. |
-| **Why the AI wins:** on these chips a stored **1 fades into a 0 about 10–16× more often** than a 0 turns into a 1 (like a light bulb that dims, but never switches itself on). The AI learned this by itself from the data. | The Arduino doubles as a diagnostic tool: it discovered real physical behaviour of each chip, including one qubit that flips 31% of the time. |
+| **Error correction works on IBM's real chips:** on ibm_fez, spreading the information over 21 qubits instead of 5 cut mistakes from **4.8% to 0.075%** (64× fewer). | The core promise of quantum error correction, shown with a €60 board as the decoder. |
+| **The AI decoder makes up to 9.5× fewer mistakes** (typically 2–3×) than the best classical decoder on small and medium codes (up to 17 qubits on ibm_marrakesh, up to 13 on ibm_fez). | Learning from data beats hand-written rules, and it runs on the Arduino itself. |
+| **Why the AI wins:** on these chips a stored **1 fades into a 0 roughly 3–20× more often** (depending on the chip and the qubit) than a 0 turns into a 1 (like a light bulb that dims, but never switches itself on). The AI learned this by itself from the data. | The Arduino doubles as a diagnostic tool: it discovered real physical behaviour of each chip, including one qubit that flips 31% of the time. |
 | **Speed limit: about 9 microseconds per round** for the AI decoder on the Arduino, as fast as the fastest classical decoder we built. | Too slow for IBM's superconducting chips (~1 µs per round), but **fast enough for trapped-ion and neutral-atom quantum computers**, whose rounds take roughly 100 µs to a few milliseconds. |
-| **We made the classical decoder 2.4–4× faster** on the microcontroller with identical answers. | Every microsecond counts in real-time control. |
+| **We made the classical decoder 1.6–4× faster** on the microcontroller with identical answers. | Every microsecond counts in real-time control. |
 
 ## Why this could work on neutral-atom and trapped-ion quantum computers
 
@@ -247,7 +256,7 @@ ours is, adapts to whatever the dominant quirk is, without hand-written rules.
    mid-circuit syndrome measurement, logical |0⟩ and |1⟩. A line of qubits with no SWAP gates is found on the
    chip; all 16 circuits go to IBM as one job (~6 s of QPU time). Shots are streamed to the STM32 over Bridge RPC,
    which decodes them and counts CPU cycles per decoder (DWT cycle counter, interrupts masked).
-2. **Faster, smarter decoders.** A lazy-reset union-find runs 2.4–4× faster on the STM32 with identical results.
+2. **Faster, smarter decoders.** A lazy-reset union-find runs 1.6–4× faster on the STM32 (2.3–4× on ibm_fez data, 1.6–3.2× on ibm_marrakesh) with identical results.
    The Linux side learns an error probability for every edge of the decoding graph from the syndromes
    ("p_ij" method), per logical state, and the STM32 uses them as integer weights. Runs are saved; old IBM jobs can
    be re-imported by ID without QPU time.
@@ -265,7 +274,7 @@ ours is, adapts to whatever the dominant quirk is, without hand-written rules.
 ## Edge AI decoder
 
 - **Model:** one hidden layer (detection events + final data bits → 32 ReLU units → 1 output; 400–4,000 parameters),
-  trained in pure numpy on the board's Linux side (~2.6 s per model on the board), on held-out shots.
+  trained in pure numpy on the board's Linux side (~2.6 s per model on the board), and evaluated only on held-out shots.
 - **Training (`code/qec_lab/python/qec_ai.py`):** inputs are the (R+1)(d−1) detection events plus the d final data bits
   (21 binary inputs at d=5, R=3; up to 128). Target: whether data qubit 0 must be flipped. Float32 training with
   logistic loss and Adam (lr 3e-3, L2 1e-3), 2,000 steps on mini-batches of 128 shots drawn from both logical states;
@@ -305,7 +314,7 @@ naive UF 19.8 µs. Second ibm_fez run: AI 2.8–3.2× fewer errors than the best
 | Data error per round, \|0⟩ vs \|1⟩ | 0.3–1.2% vs 4.1–5.8% on ibm_fez (median 0.18% vs 3.4%); consistent with T1 decay |
 | Worst qubit found | Qubit 82 on ibm_marrakesh: 31% error per round in \|1⟩ |
 | Weighted vs uniform union-find | Up to 36% fewer logical errors (d=9, ibm_fez) |
-| Fast vs naive union-find on the STM32 | 2.4–4× fewer cycles, identical results |
+| Fast vs naive union-find on the STM32 | 1.6–4× fewer cycles, identical results |
 | Real-time limit on the STM32 | d=11: ~15 µs/round (fast UF), 41 µs (naive); d=5: 8.7 µs/round (AI) |
 | Microbenchmark vs real-time replay | Replay ~1.5× slower (detector computation, unpacking, interrupts) |
 | QPU time per experiment | ~6 s for 16 circuits |
@@ -317,18 +326,19 @@ All tables, generated from the raw data: [`results/results_tables.md`](results/r
 ```
 QEC_Edge_Lab_submission/
 ├── README.md                 this file
+├── LICENSE                   MIT
 ├── code/
 │   └── qec_lab/              the main App Lab app
 │       ├── python/           main.py (app), qec_common.py (graph, error model, run storage), qec_ai.py (AI decoder),
 │       │                     requirements.txt, ibm_config.example.json
 │       ├── sketch/           sketch.ino, qec_decoders.h (decoders), qec_rt.h (real-time replay), qec_ai.h (AI inference)
 │       ├── assets/           web dashboard (index.html, app.js, style.css, libs/)
-│       └── tools/            qec_offline.py (laptop: full statistics + PyMatching), export_web_demo.py (web demo data)
+│       └── tools/            qec_offline.py (laptop: full statistics + PyMatching), export_web_demo.py (web demo data), plot_results.py (charts)
 ├── data/ibm_runs/            raw shots of the IBM runs (.npz + .json), board results, offline CSVs
 ├── results/results_tables.md all result tables, generated from data/
 ├── docs/                     GitHub Pages site: interactive web demo (docs/demo/)
-├── media/                    architecture diagram, error-correction diagram, results charts
-├── presentation/             slides (LaTeX source + PDF) and their figures
+├── media/                    photos, architecture diagram, error-correction diagram, results charts
+├── presentation/             slides (LaTeX source + PDF): full deck and an 8-slide pitch version with backup slides
 └── qec_lab_import.zip        the app, ready to import into Arduino App Lab
 ```
 
@@ -339,9 +349,9 @@ QEC_Edge_Lab_submission/
 2. **Easiest:** import `qec_lab_import.zip` (in the repository root) into Arduino App Lab; it contains `app.yaml`
    (with the WebUI brick) and `sketch/sketch.yaml` (with the Modulino library). **Manual alternative:** in Arduino App Lab 0.12,
    create an app `qec_lab`, add the **WebUI - HTML** brick and the **Modulino** sketch library.
-3. Copy `code/qec_lab/{python,sketch,assets}` into the app. **Add the brick first, then copy** (adding the brick resets `assets/`).
+3. *(Manual alternative only)* Copy `code/qec_lab/{python,sketch,assets}` into the app. **Add the brick first, then copy** (adding the brick resets `assets/`).
    Don't overwrite App Lab's own `app.yaml` and `sketch/sketch.yaml`.
-4. Copy `python/ibm_config.example.json` to `python/ibm_config.json` and fill in your token and instance. Never publish it.
+4. Edit `python/ibm_config.json` (the zip has a placeholder; otherwise copy `python/ibm_config.example.json`) and fill in your token and instance. Never publish it.
 5. Connect the Modulino Knob and Buzzer (Qwiic) and run the app.
 6. Open the dashboard on port 7000. If the Wi-Fi blocks device-to-device traffic: `ssh -N -L 7000:127.0.0.1:7000 arduino@<board-ip>`.
 7. **Accuracy tab:** noise model first, then IBM hardware. **Real-time tab:** load a saved run, sweep, then live mode with the knob.
@@ -360,6 +370,11 @@ QEC_Edge_Lab_submission/
   (surface or colour codes) are the next step.
 - **STM32 statistics** use 400 shots per distance; full statistics (4,000) come from the laptop tool, which runs the
   same C decoder code.
+- **Small numbers behind the biggest ratios:** at the lowest error rates the headline ratios rest on a handful of failures
+  (9.5× is 2 failures against 19 in 4,000 shots; 0.075% is 3 failures), so they carry large uncertainty.
+- **The AI's advantage is specific to this experiment:** it comes from state-dependent decay (a stored 1 fading to 0) in a
+  bit-flip memory; it may not carry over to 2-D codes. The energy comparison is not like-for-like either: GPU decoders
+  handle far larger codes than our 737-parameter network.
 - **Energy and impact claims are projections:** the board's power during our decoding runs is not measured yet (public
   measurements: 0.5–3 W), the environmental benefit is indirect and long-term, and custom decoder chips use far less power.
 
@@ -369,6 +384,10 @@ Arduino UNO Q, Arduino App Lab, Modulino Knob and Buzzer; IBM Quantum (Qiskit, q
 PyMatching (laptop reference decoder); socket.io client 4.7.5 (dashboard). Union-find decoding after
 Delfosse & Nickerson; edge-probability estimation after the "p_ij" correlation method used in repetition-code
 experiments.
+
+## License
+
+Code and documentation: MIT License (see `LICENSE`). The bundled socket.io client keeps its own MIT licence.
 
 ## References
 
