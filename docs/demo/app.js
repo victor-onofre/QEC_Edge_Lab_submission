@@ -121,7 +121,10 @@
   shotD.addEventListener("change", () => newShot(false));
   let lastCompact = null;
   addEventListener("resize", () => { const c = $("shotSvg").parentElement.clientWidth < 520; if (c !== lastCompact) { lastCompact = c; drawShot(); } });
+  // first shot: a hand-picked one where the AI is right and a simple vote is wrong (falls back to a shot with clues)
+  const starters = set().shots.filter((s) => s.p === 1 && s.a === s.t && s.m !== s.t);
   newShot(false, true);
+  if (starters.length) { cur = starters[Math.floor(Math.random() * starters.length)]; drawShot(); }
 
   /* ---------------------------------------------------------------- Part 2: results chart */
   const SERIES = [
@@ -311,6 +314,26 @@
     else if (busy > 0.8) { st.className = "status busy"; st.textContent = "Busy: close to the limit"; }
     else { st.className = "status ok"; st.textContent = "Keeping up"; }
   }
+  // "Speed up until it breaks": sweep the knob from slow to fast, like turning the real one
+  let sweep = null;
+  $("sweepBtn").addEventListener("click", () => {
+    if (sweep) return;
+    work = 0; hist.fill(0); setV(tauToV(60));
+    const end = tauToV(2.5), t0 = performance.now(), from = v, dur = 7000;
+    $("sweepBtn").textContent = sound ? "Speeding up..." : "Speeding up... (turn Sound on for the buzzer)";
+    sweep = setInterval(() => {
+      const k = Math.min(1, (performance.now() - t0) / dur);
+      setV(from + (end - from) * k);
+      if (k >= 1) { clearInterval(sweep); sweep = null; $("sweepBtn").textContent = "Run it again"; }
+    }, 60);
+  });
+  // demo video: load the YouTube player only when asked
+  $("videoBtn").addEventListener("click", () => {
+    const f = document.createElement("iframe");
+    f.src = "https://www.youtube-nocookie.com/embed/pFP3tOLFYHk?autoplay=1&rel=0";
+    f.title = "QEC Edge Lab demo video"; f.allow = "autoplay; encrypted-media; picture-in-picture"; f.allowFullscreen = true;
+    $("videoBtn").replaceChildren(f);
+  }, { once: true });
   rtDec.value = "0";
   const qTau = parseFloat(new URLSearchParams(location.search).get("tau"));   // e.g. ?tau=2 opens the knob at 2 µs
   if (qTau > 0) v = Math.max(0, Math.min(1000, tauToV(qTau)));

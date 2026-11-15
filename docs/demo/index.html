@@ -5,24 +5,43 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QEC Edge Lab · Interactive demo</title>
 <meta name="description" content="Interactive web twin of QEC Edge Lab: real IBM quantum computer data decoded by an Arduino UNO Q, with an on-device AI decoder.">
+<meta property="og:title" content="QEC Edge Lab: a €60 Arduino that corrects real quantum-computer errors">
+<meta property="og:description" content="Be the decoder on real IBM quantum data, compare decoders, and turn a virtual knob until the Arduino falls behind.">
+<meta property="og:image" content="https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/img/board.jpg">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="hero">
   <div class="wrap">
     <div class="brand"><div class="logo" aria-hidden="true">Q</div><span>QEC Edge Lab</span></div>
+    <div class="hero-grid"><div>
     <h1>A €60 Arduino that corrects errors from <span class="grad">real quantum computers</span></h1>
     <p class="lede">Quantum bits flip by accident all the time. A fast classical program, the <b>decoder</b>, reads clues
       and works out what went wrong. We built one on an Arduino UNO Q, with an AI that learns each chip's own
-      mistakes. Try the three parts below; no hardware or physics needed.</p>
+      mistakes. Try it below; no hardware or physics needed.</p>
+    <p class="why-eu"><b>Why it matters:</b> Europe is building quantum computers to design batteries and clean
+      materials. They all need decoders. This one runs on a few-watt, €60 board, open source, with no cloud AI.
+      <a href="#europe">More</a></p>
     <div class="badges">
       <span class="badge"><i class="dot ok"></i>Real shots from IBM ibm_marrakesh and ibm_fez (156 qubits)</span>
       <span class="badge"><i class="dot hw"></i>Decoder outputs and timings measured on the Arduino UNO Q</span>
       <span class="badge"><i class="dot warm"></i>Web twin: replays real data, no board needed</span>
     </div>
+    </div>
+    <figure class="hero-media">
+      <button id="videoBtn" class="video" aria-label="Play the 2-minute demo video (loads YouTube)">
+        <img src="img/board.jpg" alt="The Arduino UNO Q with its LED matrix lit, connected to a Modulino Knob and Buzzer" width="960" height="540">
+        <span class="play" aria-hidden="true"></span>
+      </button>
+      <figcaption>The real prototype: Arduino UNO Q, Modulino Knob and Buzzer. <a href="https://www.youtube.com/watch?v=pFP3tOLFYHk">Watch the 2-minute video</a></figcaption>
+    </figure>
+    </div>
     <nav class="jump">
       <a href="#play">1 · Be the decoder</a><a href="#results">2 · Results on real chips</a><a href="#realtime">3 · Turn the knob</a><a href="#europe">4 · Why it matters for Europe</a>
       <a class="ext" href="https://github.com/victor-onofre/QEC_Edge_Lab_submission">Code and full write-up ↗</a>
+      <a class="ext" href="https://github.com/victor-onofre/QEC_Edge_Lab_submission/blob/main/presentation/qec_edge_lab_pitch.pdf">Slides ↗</a>
     </nav>
   </div>
 </header>
@@ -37,6 +56,11 @@
         <label>Qubits <select id="shotD"></select></label>
       </div>
     </div>
+    <ol class="steps">
+      <li><b>Look</b> at the red clues and the final readout.</li>
+      <li><b>Guess</b> whether IBM stored a 0 or a 1.</li>
+      <li><b>See</b> who was right: you, a simple vote, the classical decoder or the AI.</li>
+    </ol>
     <p class="explain">IBM's chip stored one bit, <b>0 or 1</b>, copied onto a line of data qubits (circles). Helper
       checks (squares) kept asking "are my two neighbours still the same?" three times. A <b class="red">red</b> check
       means its answer <i>changed</i>: a clue that a neighbour flipped around then. At the end all data qubits are read
@@ -92,7 +116,9 @@
         <div class="callout" id="resCallout"></div>
         <p class="note">Classical reference: PyMatching, the matching decoder used by researchers, run on a laptop
           with an error model learned from the data (the better of two models is shown). Union-find and the AI ran on the Arduino. The AI is only ever
-          scored on shots it did not train on. "0 errors" means fewer than 1 in 4,000 and is drawn at the bottom.</p>
+          scored on shots it did not train on. "0 errors" means fewer than 1 in 4,000 and is drawn at the bottom.
+          At the lowest error rates the ratios rest on a handful of failures (the 9.5× on ibm_marrakesh is 2 failures
+          against 19 in 4,000 shots), so they carry large uncertainty.</p>
       </div>
     </div>
   </section>
@@ -121,6 +147,7 @@
         </div>
         <div class="tau"><span id="tauVal">20 µs</span><small>per round of clues</small></div>
         <input id="tauRange" type="range" min="0" max="1000" value="500" aria-label="Round time slider">
+        <button id="sweepBtn" class="big sweep">Speed up until it breaks</button>
         <div class="presets">
           <button data-tau="1">IBM chips ~1 µs</button>
           <button data-tau="1000">Atoms / ions ~1 ms</button>
@@ -144,6 +171,12 @@
         <p class="measured" id="measured"></p>
         <button id="clearBtn" class="ghost small">Clear the queue</button>
       </div>
+    </div>
+    <div class="real-row">
+      <figure><img src="img/knob.jpg" alt="A hand turning the Modulino Knob next to the Arduino" loading="lazy" width="960" height="540">
+        <figcaption>The real one: the Modulino Knob sets how fast clues arrive.</figcaption></figure>
+      <figure><img src="img/led_matrix.jpg" alt="The Arduino UNO Q LED matrix fully lit in blue" loading="lazy" width="960" height="540">
+        <figcaption>The real LED matrix, full: the decoder has fallen behind and the buzzer growls.</figcaption></figure>
     </div>
     <p class="note">How this twin works: real shots arrive every 3 rounds × τ, and each takes the <b>mean decode time
       measured on the STM32</b> (ibm_marrakesh, distance 5, 3 rounds, interrupts on), with ±12% random variation.
@@ -172,8 +205,9 @@
         <p>Error-corrected quantum computers are expected to help design better batteries, cleaner fertiliser catalysts
           and carbon-capture materials. Decoders are a prerequisite.</p></div>
     </div>
+    <p class="note">Hardware: Arduino UNO Q 2GB (€59.90), Modulino Knob (€9.00), Modulino Buzzer (€7.30): about €76 in total.</p>
     <p class="note">Honest limits: power is from public measurements of the UNO Q, not yet measured during our own decoding
-      runs; custom decoder chips use far less power (milliwatts) but take years and millions to design; the
+      runs; the comparison is not like-for-like (GPU decoders handle far larger codes than our small network); custom decoder chips use far less power (milliwatts) but take years and millions to design; the
       environmental impact is indirect and long-term.</p>
   </section>
 
