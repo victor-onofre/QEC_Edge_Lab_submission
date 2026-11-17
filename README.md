@@ -1,416 +1,418 @@
-# QEC Edge Lab: €60 Arduino that corrects real quantum computer errors
+# QEC Edge Lab: repetition-code memory experiments decoded on an Arduino UNO Q
 
-**Junction Finland 2026 · Arduino challenge: The Green European Renaissance** · tags: Junction Finland 2026, Arduino UNO Q, Modulino, Edge AI, Quantum computing
+Bit-flip repetition-code **memory experiments** run on IBM Heron processors, decoded on a 160 MHz microcontroller
+(the STM32U585 of an Arduino UNO Q), with cycle-accurate timing of each decoder and a real-time replay test.
 
-> **In one sentence:** quantum computers make mistakes all the time, and a fast classical computer has to fix them
-> on the fly. We built that "error fixer" on an Arduino UNO Q, tested it on real IBM quantum computers, and taught it
-> with on-device AI to fix errors up to 9.5× better than the standard method.
+This page assumes you know the basics of quantum error correction: stabilizers, syndromes, the repetition code and
+the idea of a decoding graph; union-find and matching decoders are described briefly but not derived. If you want the plain-language version written for the Junction Finland 2026
+hackathon, see the [`junction_submission`](https://github.com/victor-onofre/QEC_Edge_Lab_submission/tree/junction_submission) branch, which keeps the submission as it was.
 
-**Watch the 2-minute demo video: [youtube.com/watch?v=pFP3tOLFYHk](https://www.youtube.com/watch?v=pFP3tOLFYHk)**
-
-[![Watch the demo video](https://img.youtube.com/vi/pFP3tOLFYHk/hqdefault.jpg)](https://www.youtube.com/watch?v=pFP3tOLFYHk)
-
-**Try it in your browser: [interactive demo](https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/)**: be the decoder on real IBM shots, compare decoders on real chips, and turn a virtual knob to see when the Arduino falls behind (a web twin that replays real data and the Arduino's measured timings).
+- Demo video (2 min): https://www.youtube.com/watch?v=pFP3tOLFYHk
+- Interactive demo on real shots: https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/
+- Slides: [`presentation/`](presentation/) · Next steps: [`ROADMAP.md`](ROADMAP.md)
 
 ![The Arduino UNO Q with the Modulino Knob and Buzzer](media/board.jpg)
 
-**No quantum background needed to read this page.** The first part explains everything in plain words; the
-technical details for experts are at the end.
+> **Correction to the hackathon claim (November 2026).** The submission said that an on-device neural network makes
+> "up to 9.5× fewer errors than the best classical decoder". That comparison is misleading. Decoders that look only at
+> the final data readout and ignore every syndrome (a threshold on the number of 1s, or a per-qubit naive-Bayes rule)
+> beat every graph decoder on ibm_fez at all distances, and match the network almost everywhere. The network mostly
+> learned the state-dependent decay of |1⟩ and which qubits to distrust, which the graph decoders were never told.
+> See [section 5.3](#53-the-neural-decoder-and-what-it-actually-learns). The video, the slides and the demo page
+> still carry the original wording.
 
----
+## Summary
 
-## In 30 seconds
+| | |
+|---|---|
+| Experiment | Z-basis memory of the bit-flip repetition code, d = 3…25 (5…49 qubits), 3 syndrome rounds, logical \|0⟩ and \|1⟩ |
+| Hardware | ibm_fez and ibm_marrakesh (Heron r2, 156 qubits), IBM Open Plan; ~6 s of QPU time per 16-circuit job |
+| Statistics | 2,000 shots per logical state, so 4,000 per distance and run; 4 runs; no shots are post-selected |
+| Decoders on the STM32 | majority vote, greedy matching, union-find (naive, fast, weighted), and a small neural network (MLP: a multi-layer perceptron with one hidden layer, integer weights) |
+| Reference decoders (laptop) | PyMatching: uniform, weights per logical state, weights from both states mixed |
+| Error suppression | ibm_fez: weighted union-find 4.8% at d=3 → 0.075% at d=11 (193 → 3 failures in 4,000) |
+| Decode time on the STM32 | fast union-find 7.7 µs (d=3) to 62 µs (d=25) per shot; MLP 11.9 µs (d=3), 16.8 µs (d=5) |
+| Real-time replay | d=5: MLP and weighted union-find have a limit τ* ≈ 8.7 µs per round; both kept up at the tested τ = 10 µs |
 
-- **Real quantum hardware:** the Arduino sends experiments to IBM's 156-qubit quantum computers over the internet (free account).
-- **The Arduino fixes the errors:** its small real-time processor works out which quantum bits went wrong, and measures exactly how long that takes.
-- **Edge AI:** a small neural network trained *on the Arduino* learns the personality of each quantum chip and makes **up to 9.5× fewer mistakes** (typically 2–3×) than the best classical method.
-- **You can feel the limit:** turn a knob to speed up the stream of errors; the LED matrix fills up and a buzzer growls when the Arduino can no longer keep up.
-- **Greener, European, open:** a few-watt, €60 board runs a small neural-network decoder; industry runs much larger ones on 700 W data-centre GPUs, and it suits the atom and ion quantum computers Europe is building ([why it matters](#the-green-european-renaissance-why-this-matters-for-europe)).
+## 1. What this is: a memory experiment
 
----
+A memory experiment asks one question: **if a logical state is prepared and then left alone under repeated syndrome
+extraction, how often is the logical value wrong at the end?** There are no logical gates. The logical qubit only
+has to survive.
 
-## The Green European Renaissance: why this matters for Europe
+**Code.** The bit-flip repetition code on d data qubits has stabilizers Z<sub>i</sub>Z<sub>i+1</sub> (i = 0…d−2).
+Logical Z is a single Z on any data qubit; logical X is X on all d of them. The code has distance d against X errors
+and distance 1 against Z errors, so it protects a classical bit of quantum information: it corrects bit flips and
+does nothing about phase flips. It is not a full logical qubit.
 
-The challenge asks for Edge AI on the UNO Q that solves real problems, makes things greener and does not depend on
-big tech. Here is how QEC Edge Lab fits, and where it does not.
+**Protocol (one shot).**
 
-**1. Decoding with a few watts instead of a data-centre GPU.** Today's leading AI decoders run on data-centre GPUs:
-Quantinuum's neural decoders use NVIDIA H100s [12], each rated at up to 700 W [17]. The whole UNO Q draws about 0.5 W
-idle and 2–3 W at full load in independent measurements [15], and our AI decoder fits in 8.5 KB on its
-microcontroller. On the slower atom and ion machines, where our decoder has about 100× more time than it needs, a
-few-watt board per group of qubits could take over part of a GPU server's job. To be fair: custom decoder chips are
-even more frugal (Riverlane's chip draws about 8 mW [16]), but they take years and millions of euros to design. Our
-approach uses a board you can buy in a shop, is reprogrammable, and retrains itself when the quantum chip's noise changes.
+1. **Prepare** all data qubits in |0⟩ (logical |0⟩) or all in |1⟩ (logical |1⟩). Both are +1 eigenstates of every stabilizer.
+2. **Repeat R = 3 times:** entangle each ancilla with its two neighbouring data qubits (two CX layers), measure the
+   ancilla to read Z<sub>i</sub>Z<sub>i+1</sub>, then reset it.
+3. **Measure all data qubits** in the Z basis. The parities of neighbouring data bits give one more round of
+   stabilizer values with no ancilla measurement error (a data readout error appears in it as a pair of space-like
+   detections), and data qubit 0 gives the raw logical readout.
+4. **Decode offline:** from the syndrome history, decide whether the readout of data qubit 0 must be flipped. The shot
+   is a failure if the corrected value differs from the prepared one.
 
-**2. European, open and independent.** Decoding is dominated by US tech giants (Google, IBM, NVIDIA). Yet Europe
-builds exactly the kinds of quantum computers our approach suits best: neutral atoms (Pasqal in France, planqc in
-Germany) and trapped ions (AQT in Austria), alongside IQM's superconducting machines here in Finland. The EU's Quantum
-Europe Strategy (2025) aims to make Europe a quantum leader by 2030 [14]. QEC Edge Lab is open source, runs on a board
-designed in Italy by Arduino, learns locally (the chip's data never leaves the board) and needs no cloud AI service.
+**What is measured** is the logical error probability per shot after 3 rounds, for each distance and decoder.
+With only 3 rounds we do not extract an error rate per round or the suppression factor Λ (the factor by which the
+logical error per round drops when d increases by 2); that needs a sweep in R (see the roadmap).
 
-**3. People: opening the door to quantum engineering.** A university or school can teach quantum error correction on
-real quantum computers with a €60 board and a free IBM account, instead of lab equipment costing thousands. Students
-can see, hear and touch the problem. That is how Europe grows the engineers this field needs.
+**What a memory experiment does not show.** The correction is a Pauli-frame update: the decoder's X corrections are
+tracked classically and applied to the measured result, and nothing is fed back to the qubits. Because the data start in a computational-basis state, the final
+data readout carries direct information about the prepared state (section 5.3 is entirely about this). And the
+prepared state is known, which is what makes training labels available.
 
-**4. The long game for the planet.** One of the most-hoped-for uses of error-corrected quantum computers is simulating
-molecules and materials: better batteries, catalysts for cleaner fertiliser production, materials for carbon capture.
-None of that works without fast, accurate decoders. This impact is long-term and indirect, and we say so plainly.
+## 2. The circuits
 
-**What we have not shown yet:** we have not measured the board's power during our own decoding runs (next step: a
-USB power meter), and the energy benefit is a projection for atom and ion machines, not a tested result.
+The circuit builder is `rep_code_circuit(d, rounds, truth)` in [`code/qec_lab/python/main.py`](code/qec_lab/python/main.py).
+Qubits alternate data, ancilla, data, … along a line of 2d−1 physical qubits, found on the coupling map so that no
+SWAP gates are needed. Each job holds 16 circuits (8 distances × 2 logical states), transpiled at optimisation level 1,
+with no dynamical decoupling, and run with `SamplerV2`.
 
----
+The pictures below are generated by [`code/qec_lab/tools/draw_circuits.py`](code/qec_lab/tools/draw_circuits.py), which
+takes the builder verbatim from the app and the physical qubits from the run's metadata. They show what was
+submitted, before IBM-specific compilation.
 
-## Quantum computing in one minute (no physics needed)
+**Distance 3, logical |1⟩, 3 rounds** (ibm_marrakesh, job `dbs9cg9abdes73fqsuu0`, physical qubits 82, 81, 76, 61, 62):
 
-**Quantum bits are fragile.** A normal computer bit is a 0 or a 1 and stays that way. A quantum bit (*qubit*) is so
-sensitive that heat, stray signals or simply time make it flip by accident, on today's machines, between once in a hundred and once in
-a thousand operations. Left alone, errors pile up and the result is garbage.
+![Distance-3 memory circuit, logical 1](media/circuit_ibm_marrakesh_d3_logical1.png)
 
-**The fix: redundancy and voting.** Imagine whispering a message across a noisy room. To be safe you say it with
-several people at once, and the listener takes the majority. Quantum error correction does the same: one "logical"
-bit of information is spread over many physical qubits.
+**Distance 5, logical |0⟩, 3 rounds** (same job, physical qubits 82, 81, 76, 61, 62, 63, 56, 43, 42):
 
-**The catch: you can't just look.** Looking at a qubit destroys its quantum information. So instead, helper qubits
-ask indirect questions such as *"are these two neighbours still the same?"*, over and over, every few microseconds.
-The answers are clues; we call them **syndromes**.
+![Distance-5 memory circuit, logical 0](media/circuit_ibm_marrakesh_d5_logical0.png)
 
-**The detective: the decoder.** A classical computer reads the stream of clues and works out *which* qubits most
-likely flipped, so they can be corrected. This program is called the **decoder**. It has to be:
+The same structure for one round at distance 3, as text:
 
-1. **Accurate:** a wrong guess makes things worse, and
-2. **Fast:** new clues arrive every round (about every microsecond on IBM machines). Like a supermarket cashier:
-   if customers arrive faster than the cashier serves them, the queue grows forever.
+```
+         ┌───┐ ░                         ░ ┌─┐
+ data 0: ┤ X ├─░───■─────────────────────░─┤M├──────
+         └───┘ ░ ┌─┴─┐┌───┐┌─┐           ░ └╥┘
+check 0: ──────░─┤ X ├┤ X ├┤M├─|0>───────░──╫───────
+         ┌───┐ ░ └───┘└─┬─┘└╥┘           ░  ║ ┌─┐
+ data 1: ┤ X ├─░───■────■───╫────────────░──╫─┤M├───
+         └───┘ ░ ┌─┴─┐┌───┐ ║  ┌─┐       ░  ║ └╥┘
+check 1: ──────░─┤ X ├┤ X ├─╫──┤M├──|0>──░──╫──╫────
+         ┌───┐ ░ └───┘└─┬─┘ ║  └╥┘       ░  ║  ║ ┌─┐
+ data 2: ┤ X ├─░────────■───╫───╫────────░──╫──╫─┤M├
+         └───┘ ░            ║   ║        ░  ║  ║ └╥┘
+round 0: ═══════════════════╩═══╩═══════════╬══╬══╬═
+  final: ═══════════════════════════════════╩══╩══╩═
+```
 
-![How quantum error correction works](media/how_error_correction_works.png)
+On a Heron chip each CX becomes a CZ between Hadamard-like single-qubit rotations on the ancilla. This is a local
+re-compilation for illustration, not the stored job circuit:
 
-**This project builds that decoder on an Arduino**, checks how accurate and how fast it is on real IBM data, and
-uses AI to make it smarter.
+![Distance-3 round in native gates](media/circuit_d3_native_gates.png)
 
-**Detecting or correcting?** As in Google's and IBM's error-correction experiments, the qubits are not physically
-flipped back: the decoder works out which errors happened and **corrects the measured result in software** (experts
-call this tracking the errors in the "Pauli frame"). The proof that this is correction and not just detection is that
-the final answer gets *more* reliable as more qubits are added. Our decoding runs after each IBM job; the real-time
-test replays the real data on the Arduino at realistic speed.
+Three features of this circuit matter for the results:
 
----
+- **Data qubits idle while the ancillas are measured and reset.** Measurement is the slowest operation on these chips,
+  so a data qubit in |1⟩ spends most of each round exposed to T1 decay. This is the likely origin of the
+  state-dependent noise in section 5.2. We did not record gate, measurement and reset durations or the qubits' T1, so
+  the size of the effect is not checked against calibration; measurement-induced decay or crosstalk could contribute.
+- **The two CX layers are not simultaneous.** Data qubit k couples to ancilla k in the first layer and to ancilla k−1
+  in the second, so an X error on an interior data qubit between its two CXs fires detectors (t, k−1) and (t+1, k):
+  a diagonal, space-time edge. Our decoding graph has no diagonal edges, so such
+  an error is matched through a space edge plus a time edge.
+- **Ancillas are reset actively**, so each syndrome bit is the stabilizer value itself, not a running parity.
 
-## Why this matters: the race to build fast decoders
+## 3. From measurements to a decoding problem
 
-Decoding is one of the hardest open engineering problems on the road to useful quantum computers. Riverlane, a
-company that builds decoders, calls the decoder "the beating heart of QEC" [1]. The biggest players are all
-building dedicated hardware for it:
+**Shot layout.** One shot is R(d−1) syndrome bits s<sub>t,i</sub> followed by d data bits x<sub>k</sub>.
 
-| Who | What they built | How fast |
+**Detection events.** With s<sub>R,i</sub> = x<sub>i</sub> ⊕ x<sub>i+1</sub> (the stabilizer values implied by the final
+readout) and s<sub>−1,i</sub> = 0, the detectors are
+
+D<sub>t,i</sub> = s<sub>t,i</sub> ⊕ s<sub>t−1,i</sub>, for t = 0…R and i = 0…d−2.
+
+**Decoding graph.** Nodes are the (R+1)(d−1) detectors plus one boundary node.
+
+| Edge | Connects | Fault it represents |
 |---|---|---|
-| **Google Quantum AI** (Nature, 2024) | First error correction "below threshold" on its Willow chip, with a real-time decoder [2] | 63 µs average decoder latency, for a 1.1 µs error-correction cycle |
-| **Google DeepMind — AlphaQubit** (Nature, 2024) | A neural-network decoder that beat classical decoders on Google's real hardware [3]; a 2025 successor targets real-time speed [4] | Successor reported under 1 µs per cycle on commercial hardware [4] |
-| **Riverlane — Deltaflow 2** | A decoder on FPGA chips, tested live with Rigetti's quantum computer [5][6] | 0.44–0.79 µs per round; about 16 µs end-to-end for the whole system [6] |
-| **NVIDIA — CUDA-Q QEC + NVQLink** | GPU decoders wired to quantum control electronics, including an AI pre-decoder in front of a classical one [7] | 2.1 µs per round for the AI-assisted pipeline in a surface-code test; under 4 µs FPGA–GPU round trip [7] |
-| **IBM — Relay-BP on FPGA** | A decoder for IBM's next-generation codes, built to keep up with a 1 µs measurement cycle [8] | 24 ns per algorithm iteration on an AMD FPGA [8] |
+| Space | (t, i) – (t, i+1), every t | X error on data qubit i+1 before round t; at t = 0 also a preparation error, at t = R also a readout error |
+| Boundary | (t, 0) – B and (t, d−2) – B, every t | The same for data qubit 0 or d−1 |
+| Time | (t, i) – (t+1, i) | Measurement error on ancilla i in round t (a failed reset looks similar) |
 
-These numbers measure different things (per round, end-to-end, per iteration), so they are not directly
-comparable. The message is the same everywhere: **decoders must be accurate, fast and small**, and the industry is
-spending FPGAs, GPUs and custom chips to get there. Two trends stand out: **neural-network decoders** (AlphaQubit,
-NVIDIA's AI pre-decoder) and **putting the decoder close to the quantum computer**.
+The logical observable is the final value of data qubit 0, so a correction flips it once for every left-boundary
+edge it contains. Code: `qec::configure` in [`sketch/qec_decoders.h`](code/qec_lab/sketch/qec_decoders.h) and
+`build_graph` in [`python/qec_common.py`](code/qec_lab/python/qec_common.py) (same edge order in both).
 
-**QEC Edge Lab explores the same two ideas on a €60 board:** a neural-network decoder trained on the device, running
-on an embedded processor next to the experiment, measured against the same real-time limit. Our Arduino reaches about
-**9 µs per round**: roughly 10× slower per round than the FPGA and GPU systems above, which is exactly why the
-industry builds dedicated hardware, but achieved with a €60 microcontroller you can buy in a shop and fast enough
-for trapped-ion and neutral-atom machines, whose rounds take roughly 100 µs to a few milliseconds.
+**Edge probabilities from the data.** The Linux side estimates the probability of each bulk edge from pairwise
+detector correlations (the "p<sub>ij</sub>" method used in repetition-code experiments):
 
----
+p<sub>ij</sub> = ½ − ½ √( 1 − 4(⟨x<sub>i</sub>x<sub>j</sub>⟩ − ⟨x<sub>i</sub>⟩⟨x<sub>j</sub>⟩) / (1 − 2⟨x<sub>i</sub>⟩ − 2⟨x<sub>j</sub>⟩ + 4⟨x<sub>i</sub>x<sub>j</sub>⟩) )
 
-## What we built
+Boundary-edge probabilities follow from each detector's marginal rate after removing its bulk edges. The estimate
+is made **separately for logical |0⟩ and |1⟩**, because the two see very different data noise. Weights are
+w = ln((1−p)/p); for the microcontroller they are rounded to integer growth capacities, round(2w / median w),
+clipped to 1…15 and packed 4 bits per edge.
+
+## 4. Decoders
+
+| Decoder | Where | Uses syndromes | Noise knowledge | Notes |
+|---|---|---|---|---|
+| Majority vote | STM32 | No | None | Baseline: majority of the final data bits |
+| Greedy matching | STM32 | Yes | None | Repeatedly pairs the closest detectors (Manhattan distance) or a detector with the nearer boundary |
+| Union-find, naive | STM32 | Yes | None | Delfosse–Nickerson cluster growth by half-edges, then peeling on a spanning forest |
+| Union-find, fast | STM32 | Yes | None | Same answers; early exit on empty syndromes, lazy per-shot reset, growth visits only the vertices of active clusters |
+| Union-find, weighted | STM32 | Yes | p<sub>ij</sub> per edge, per logical state | Integer capacity per edge; capacity 2 everywhere reproduces the unweighted decoder |
+| MLP (multi-layer perceptron) | STM32 | Yes, plus the final data bits | Learned from labelled shots | (R+1)(d−1) + d binary inputs → 32 ReLU → 1 output: flip data qubit 0 or not |
+| MWPM (PyMatching) | Laptop | Yes | None, per-state p<sub>ij</sub>, or mixed-state p<sub>ij</sub> | Reference; "mixed" is the fair, label-free baseline |
+
+The laptop tool [`tools/qec_offline.py`](code/qec_lab/tools/qec_offline.py) compiles the same C decoder files that run on
+the STM32, so the error rates below are what the microcontroller's code produces.
+
+**MLP details.** Trained in numpy on the board's Linux side (logistic loss, Adam, 2,000 steps, batch 128, ~2.6 s per
+model), one network for both logical states. The prepared state is only the label. Weights are quantised to 15-bit
+integers and sent to the STM32, where the first layer is additions only (inputs are bits) and inference is bit-exact
+with the Python model on every shot tested; about 8.5 KB of RAM. Reported error rates use 2-fold cross-fitting: the
+shots are split in two halves, a model trained on one half (2,000 shots) decodes the other, and vice versa, so every
+shot is decoded by a model that did not see it.
+
+## 5. Results
+
+Failures out of 4,000 shots per distance (2,000 per logical state). Runs: **fez-1** `dbs8m78k09pc73avsgh0`,
+**fez-2** `dbs8pivv5hds73dim45g`, **fez-3** `dbsa8iok09pc73avu6bg`, **marrakesh** `dbs9cg9abdes73fqsuu0`. All four used
+the same line of physical qubits (82, 81, 76, 61, 62, 63, 56, 43, 42, …). Weighted decoders are cross-fitted on two
+halves. With this sample size, small counts carry wide uncertainty: the 95% Wilson confidence interval is 0.03–0.22%
+for 3 failures and 0.30–0.74% for 19.
+
+### 5.1 Error suppression with distance
+
+**ibm_fez (fez-2)**
+
+| d | Qubits | Majority | Union-find | Weighted UF | MWPM | MWPM, per-state weights | MWPM, mixed weights |
+|---|---|---|---|---|---|---|---|
+| 3 | 5 | 206 | 194 | 193 | 222 | 181 | 194 |
+| 5 | 9 | 80 | 61 | 43 | 61 | 44 | 39 |
+| 7 | 13 | 32 | 26 | 23 | 28 | 16 | 19 |
+| 9 | 17 | 19 | 11 | 7 | 9 | 4 | 5 |
+| 11 | 21 | 10 | 3 | 3 | 4 | 3 | 3 |
+| 15 | 29 | 3 | 0 | 0 | 0 | 0 | 0 |
+| 21, 25 | 41, 49 | 0 | 0 | 0 | 0 | 0 | 0 |
+
+**ibm_marrakesh**
+
+| d | Qubits | Majority | Union-find | Weighted UF | MWPM | MWPM, per-state weights | MWPM, mixed weights |
+|---|---|---|---|---|---|---|---|
+| 3 | 5 | 730 | 645 | 488 | 677 | 423 | 491 |
+| 5 | 9 | 391 | 201 | 166 | 207 | 152 | 144 |
+| 7 | 13 | 260 | 89 | 75 | 98 | 67 | 80 |
+| 9 | 17 | 122 | 29 | 21 | 26 | 19 | 21 |
+| 11 | 21 | 67 | 19 | 20 | 17 | 10 | 8 |
+| 15 | 29 | 72 | 6 | 17 | 6 | 7 | 2 |
+| 21 | 41 | 27 | 2 | 2 | 0 | 1 | 0 |
+| 25 | 49 | 13 | 0 | 0 | 0 | 0 | 0 |
+
+The logical error falls with distance on both chips for every decoder.
+
+**The ibm_marrakesh numbers are dominated by one bad qubit, and it is the logical observable.** On that chip, data
+qubit 0 (physical qubit 82) reads 1 in about 26% of the logical-|0⟩ shots and 29% of the logical-|1⟩ shots, at every
+distance: its readout carries almost no information. Since the observable is defined as the value of data qubit 0,
+the marrakesh comparison mostly measures how well a decoder copes with a dead observable qubit. The line of qubits
+is chosen by a seeded random walk on the coupling map (`find_line`), not from calibration data, so the same line was
+used on both chips; on ibm_fez the same qubit behaves normally in |0⟩ (about 1% or less read as 1).
+
+![Logical error vs distance, ibm_marrakesh](media/logical_error_vs_distance_ibm_marrakesh.png)
+![Logical error vs distance, ibm_fez](media/logical_error_vs_distance_ibm_fez.png)
+
+Both charts are drawn by [`tools/plot_results.py`](code/qec_lab/tools/plot_results.py) and include the two readout-only
+baselines of section 5.3 (green). A hollow marker in the grey band means 0 failures in 4,000 shots. For clarity they
+show one graph decoder from the STM32 (weighted union-find) and one label-free reference (MWPM with mixed weights).
+
+### 5.2 State-dependent noise
+
+Edge probabilities estimated per logical state from the d = 25 shots (p<sub>ij</sub> method). "Data" is the median
+over the 25 data qubits; layer 0 is the edge layer before the first syndrome round, layers 1–3 each follow a full round.
+
+| Chip | State | Data, layer 0 | Data, layers 1 / 2 / 3 | Data, mean of layers | Measurement |
+|---|---|---|---|---|---|
+| ibm_fez (fez-2) | \|0⟩ | 0.22% | 0.07% / 0.03% / 0.27% | 0.17% | 3.7% |
+| ibm_fez (fez-2) | \|1⟩ | 0.60% | 4.4% / 4.7% / 5.2% | 4.0% | 3.6% |
+| ibm_marrakesh | \|0⟩ | 0.60% | 0.15% / 0.31% / 0.68% | 0.40% | 1.9% |
+| ibm_marrakesh | \|1⟩ | 0.90% | 8.1% / 7.8% / 8.9% | 7.2% | 1.6% |
+
+- **A data qubit in |1⟩ flips about 18–23 times more often than one in |0⟩,** in the per-qubit median. Averaged over each code
+  instead, the ratio stored with the board results is 5–14 on ibm_fez and 3–7 on ibm_marrakesh.
+- **The excess appears only after a full round.** Layer 0 is below 1% for both states; layers 1–3 jump to 4–9% for
+  |1⟩. That is what decay during the ancilla measurement and reset would produce.
+- **Almost all logical failures are logical-|1⟩ shots.** Majority vote at d = 3: 0 failures on |0⟩ and 206 on |1⟩
+  (fez-2); 40 and 690 on ibm_marrakesh.
+
+This breaks the assumption behind matching and union-find on this graph, where an edge has one probability whatever
+the data state. Per-state weights recover part of the gap, at the price of using knowledge of the prepared state.
+
+### 5.3 The neural decoder and what it actually learns
+
+The MLP sees the detection events **and the final data bits**. In a Z-basis memory experiment with |1⟩ → |0⟩ decay,
+the final data bits alone are a strong, asymmetric estimator of the prepared state: surviving 1s are evidence for
+logical |1⟩, while a few 0s are weak evidence for logical |0⟩. To separate that from anything learned from the
+syndromes, compare with two decoders that use **only the final data bits**:
+
+- **Threshold:** logical 1 if the number of 1s reaches a threshold (one parameter).
+- **Naive Bayes:** one probability per data qubit and logical state, so it can also learn which qubits to distrust.
+
+Both are fitted on one half of the shots and scored on the other, with the same split as the MLP. "Best graph
+decoder" is the lowest count among union-find, weighted union-find and the three PyMatching variants, including the
+per-state ones that use the label, so it is generous to the graph decoders.
+
+| Run | d | Majority | Best graph decoder | Threshold (final bits) | Naive Bayes (final bits) | MLP |
+|---|---|---|---|---|---|---|
+| fez-2 | 3 | 206 | 181 | 108 | 108 | **77** |
+| fez-2 | 5 | 80 | 39 | **4** | **4** | 20 |
+| fez-2 | 7 | 32 | 16 | **0** | **0** | 9 |
+| fez-2 | 9 | 19 | 4 | **0** | **0** | 9 |
+| fez-2 | 11 | 10 | 3 | **0** | **0** | 12 |
+| fez-3 | 5 | 108 | 56 | **14** | **14** | 20 |
+| fez-3 | 7 | 69 | 25 | 2 | **1** | 9 |
+| marrakesh | 3 | 730 | 423 | 730 | 311 | **251** |
+| marrakesh | 5 | 391 | 144 | 181 | 104 | **72** |
+| marrakesh | 7 | 260 | 67 | 65 | 20 | **9** |
+| marrakesh | 9 | 122 | 19 | 13 | **2** | **2** |
+| marrakesh | 11 | 67 | 8 | 3 | 2 | **1** |
+
+Reading:
+
+- **On ibm_fez, ignoring the syndromes beats every graph decoder at every distance,** and beats the MLP for d ≥ 5.
+  The MLP's apparent error floor of 0.2–0.4% at large d is a training artefact: more inputs, the same 2,000 training
+  shots per fold.
+- **On ibm_marrakesh the threshold is not enough** (it loses to the graph decoders at d = 3 and 5), because one data
+  qubit is uninformative. Naive Bayes, which can learn that, gets most of the way to the MLP: the 9.5× of the
+  hackathon write-up (19 failures against 2 at d = 9) is matched exactly without any syndrome.
+- **The syndromes add a measurable gain to the MLP only at small distance:** d ≤ 7 on ibm_marrakesh and d = 3 on
+  ibm_fez. So the ratio "MLP against the best graph decoder" mostly measures a state prior and per-qubit readout
+  statistics that the graph decoders lack, not learning of error correlations.
+- **The effect is specific to this experiment.** It needs data in a product state whose readout reveals the logical
+  value, plus strongly biased decay. With a hidden random X-frame on the data, or in the phase-flip code, the
+  shortcut is gone. The roadmap's first steps are these controls and far more shots.
+
+Related work, reported to use about 700 times more data: a neural repetition-code decoder on IBM hardware [9].
+
+### 5.4 Decoder cost on the STM32
+
+Mean CPU cycles per shot at 160 MHz, measured with the Cortex-M cycle counter (DWT) with interrupts masked, 400 shots
+per distance, run fez-2. The majority column includes the detector computation shared by all decoders; the other
+columns exclude it.
+
+| d | Majority | Greedy | UF naive | UF fast | UF weighted | UF fast (µs) | Fast vs naive |
+|---|---|---|---|---|---|---|---|
+| 3 | 411 | 283 | 3,008 | 1,232 | 1,192 | 7.7 | ×2.4 |
+| 5 | 689 | 570 | 5,951 | 2,280 | 2,214 | 14.2 | ×2.6 |
+| 7 | 967 | 870 | 9,016 | 3,140 | 3,108 | 19.6 | ×2.9 |
+| 9 | 1,245 | 1,259 | 12,328 | 4,022 | 3,824 | 25.1 | ×3.1 |
+| 11 | 1,523 | 1,640 | 15,480 | 4,636 | 4,732 | 29.0 | ×3.3 |
+| 15 | 2,079 | 2,917 | 22,497 | 6,368 | 6,438 | 39.8 | ×3.5 |
+| 21 | 2,913 | 5,466 | 32,728 | 8,300 | 8,391 | 51.9 | ×3.9 |
+| 25 | 3,469 | 7,714 | 39,642 | 9,902 | 10,247 | 61.9 | ×4.0 |
+
+On the noisier ibm_marrakesh data the fast version gains ×1.6–3.2, because fewer shots have empty syndromes.
+The naive and fast union-find agree on every shot. MLP, measured on run fez-3: 1,909 cycles (11.9 µs) at d=3,
+2,686 (16.8 µs) at d=5, 4,974 (31 µs) at d=11, 10,246 (64 µs) at d=25.
+
+### 5.5 Real-time replay
+
+4,000 shots are bulk-loaded into STM32 RAM and replayed as if one syndrome round arrived every τ, with interrupts
+on. The STM32 decodes in order and records backlog and latency. The limit is τ* = mean decode time / R, where the
+decode time includes detector computation but not unpacking the shot from memory, so τ* is slightly optimistic.
+
+**ibm_marrakesh, d = 5**
+
+| Decoder | Mean decode in replay | τ* | Kept up at (max backlog) | Fell behind at (max backlog) |
+|---|---|---|---|---|
+| MLP | 26.0 µs | 8.7 µs | 10 µs (30) | 5.6 µs (2,214) |
+| UF weighted | 25.9 µs | 8.6 µs | 10 µs (47) | 5.6 µs (2,219) |
+| UF fast | 31.0 µs | 10.4 µs | 17.8 µs (15) | 10 µs (456) |
+| UF naive | 59.3 µs | 19.8 µs | 31.6 µs (8) | 17.8 µs (523) |
+
+**ibm_fez (fez-2), d = 11:** UF fast τ* = 14.8 µs, UF weighted 15.5 µs, UF naive 41 µs. Near the limit (83% busy)
+the p99 latency is already 1.2 ms. Decode time inside the replay is about 1.5× the isolated measurement, because it
+includes detector computation (1,523 cycles, 9.5 µs at d=11), which the isolated figures exclude, and interrupts.
+
+For scale: the fastest superconducting error-correction cycles are about 1 µs [1], roughly ten times shorter than
+this limit (we did not record the round duration of our own circuits on Heron).
+Neutral-atom and trapped-ion platforms run rounds of roughly 100 µs to a few ms, which leaves a microcontroller a
+wide margin for a small code [10]. Dedicated decoders for superconducting hardware run on FPGAs, GPUs and custom
+chips [2–5].
+
+All tables: [`results/results_tables.md`](results/results_tables.md). Raw shots: [`data/ibm_runs/`](data/ibm_runs/).
+
+## 6. Limitations
+
+- **Repetition code only.** Distance d against X errors, 1 against Z errors; no logical qubit is protected.
+- **Three rounds.** No error per round, no Λ. Boundary rounds dominate.
+- **Small counts.** The lowest error rates rest on 0–3 failures in 4,000 shots.
+- **Graph without diagonal edges,** although the CX schedule produces space-time correlated detections.
+- **Per-state weights use the prepared state.** The label-free baseline is "MWPM, mixed weights".
+- **The MLP result is mostly a readout-prior effect** in a computational-basis memory experiment (section 5.3).
+- **The observable sits on a bad qubit on ibm_marrakesh,** and the qubit line is not chosen from calibration data (5.1).
+- **Not recorded:** round duration, measurement and reset lengths, T1 and readout error of the qubits used.
+- **No leakage handling, no soft information, no dynamical decoupling, no post-selection.**
+- **Real time is a replay.** The timing on the STM32 is real; the loop with the QPU is not closed, and decoding
+  happens after the job.
+- **STM32 statistics** use 400 shots per distance; the 4,000-shot error rates come from the same C code compiled on a laptop.
+- **Power not measured.** Public measurements of the board give 0.5 W idle and 2–3 W under load.
+
+## 7. System
 
 ![Architecture](media/architecture.png)
 
-The Arduino UNO Q is two computers on one board, and that is exactly how real quantum computers are controlled:
-
-| Part of the Arduino | Its job here | In everyday terms |
-|---|---|---|
-| **Linux side** (Qualcomm processor) | Talks to IBM, stores results, trains the AI, serves the web dashboard | The office: planning and paperwork |
-| **Microcontroller** (STM32, 160 MHz) | Runs the decoders and times every one of them to the clock cycle | The factory floor: fast, precise, no interruptions |
-| **8×13 LED matrix** | Shows progress, results, and the "queue" of unsolved errors | A live scoreboard |
-| **Modulino Knob** | Sets how fast new error clues arrive | The speed dial |
-| **Modulino Buzzer** | Growls when the decoder falls behind | The alarm |
-
-### How the AI learns, on the Arduino itself
-
-**In one line:** the Arduino teaches itself, in about 3 seconds, how this particular quantum chip tends to fail,
-and we only ever score it on data it has never seen.
-
-- **Trained in plain Python (numpy).** No PyTorch, TensorFlow or GPU: the training code is about 25 hand-written
-  lines that run on the Linux side of the board. Big AI frameworks would be heavy to install on a 2 GB board and are
-  overkill for a network this small.
-- **Trained on the board, in about 2.6 seconds per model.** After each IBM job, the Arduino's Linux side trains one
-  small network for each code size, converts it to whole numbers and sends it to the microcontroller, which then
-  runs it using only additions. The microcontroller gives exactly the same answer as the Python version, bit for bit.
-  The chip's data never leaves the board: this is *edge AI*.
-- **Tested only on shots it never saw.** A decoder scored on the same data it learned from could just memorise it
-  and look better than it is. So we split the shots into two halves: one network learns from the first half and is
-  scored on the second, another does the reverse. Every shot is judged by a network that never saw it.
-- **It cannot cheat.** The right answer (whether a 0 or a 1 was stored) is used only to teach the network, never
-  given to it as an input. Like a real decoder, it has to work the answer out from the clues.
-
-## What you see and hear in the demo
-
-Video: https://www.youtube.com/watch?v=pFP3tOLFYHk
-
-1. **The scoreboard:** the dashboard shows real IBM results — as we use more qubits, the error rate drops (that's error correction working).
-2. **The AI:** a pink line on the chart, the neural network trained on the Arduino beats the classical decoders.
-3. **The speed test:** we turn the knob to send clues faster and faster. The Arduino keeps up… until about **9 microseconds per round**. Past that point the LED matrix fills with bars, the dashboard turns red and the buzzer growls: the queue of unsolved errors is exploding.
-
-![The dashboard in live mode: the decoder is falling behind](media/falling_behind.jpg)
-
-## Results in plain words
-
-![Logical error vs distance on ibm_marrakesh](media/logical_error_vs_distance_ibm_marrakesh.png)
-
-*How to read it:* left to right = more qubits protecting the information; down = fewer mistakes. The lines go
-down, so error correction works on the real machine. **Blue** is the Arduino's classical decoder; **purple** is the
-neural network trained on the Arduino. On this chip (ibm_marrakesh) the AI makes fewer mistakes than every other
-decoder at every size shown: 2× fewer with 9 qubits and up to 9.5× fewer with 17 qubits.
-
-**It does not always win.** On a second chip (ibm_fez, below) the AI leads on small codes (5–13 qubits, about 2× fewer
-mistakes) but levels off at about 0.2–0.3% on bigger codes, where the classical decoders take over. So the best
-design uses the AI for small codes and the classical decoder for large ones.
-
-![Logical error vs distance on ibm_fez](media/logical_error_vs_distance_ibm_fez.png)
-
-| What we found | Why it matters |
-|---|---|
-| **Error correction works on IBM's real chips:** on ibm_fez, spreading the information over 21 qubits instead of 5 cut mistakes from **4.8% to 0.075%** (64× fewer). | The core promise of quantum error correction, shown with a €60 board as the decoder. |
-| **The AI decoder makes up to 9.5× fewer mistakes** (typically 2–3×) than the best classical decoder on small and medium codes (up to 17 qubits on ibm_marrakesh, up to 13 on ibm_fez). | Learning from data beats hand-written rules, and it runs on the Arduino itself. |
-| **Why the AI wins:** on these chips a stored **1 fades into a 0 roughly 3–20× more often** (depending on the chip and the qubit) than a 0 turns into a 1 (like a light bulb that dims, but never switches itself on). The AI learned this by itself from the data. | The Arduino doubles as a diagnostic tool: it discovered real physical behaviour of each chip, including one qubit that flips 31% of the time. |
-| **Speed limit: about 9 microseconds per round** for the AI decoder on the Arduino, as fast as the fastest classical decoder we built. | Too slow for IBM's superconducting chips (~1 µs per round), but **fast enough for trapped-ion and neutral-atom quantum computers**, whose rounds take roughly 100 µs to a few milliseconds. |
-| **We made the classical decoder 1.6–4× faster** on the microcontroller with identical answers. | Every microsecond counts in real-time control. |
-
-## Why this could work on neutral-atom and trapped-ion quantum computers
-
-There are several ways to build a qubit. IBM and Google use **superconducting circuits**: very fast, about one
-error-correction round per microsecond, which is why our Arduino (about 9 µs per round) is too slow for them.
-Two other leading approaches are much slower per round, and that changes the picture:
-
-- **Neutral atoms** (single atoms held by laser "tweezers"; QuEra, Atom Computing, Pasqal) and
-- **Trapped ions** (charged atoms held by electric fields; Quantinuum, IonQ).
-
-Their qubits are very stable, but gates, measurements and moving atoms or ions around take much longer: roughly
-**1 millisecond per round**, and trapped-ion design models assume 1–5 ms [9][10].
-
-![Time budget by platform](media/time_budget_by_platform.png)
-
-**1. There is time to spare.** At about 1 ms per round, the decoder has roughly **100 times more time** than our
-Arduino needs. A €60 microcontroller could keep up, with room left for bigger codes or for decoding several
-logical qubits at once.
-
-**2. The industry is already using AI decoders on these machines.** Harvard, QuEra and MIT reached
-"below-threshold" error correction on 448 neutral atoms using **machine-learning decoding** together with detection
-of lost atoms (Nature, 2025) [11]. Quantinuum reports **neural-network decoders** for its Helios trapped-ion computer,
-running at 0.2–0.5 ms per round on NVIDIA H100 GPUs [12]. Our project shows that this kind of decoder can also
-run on a cheap, low-power embedded chip.
-
-**3. Their errors have their own personality, which an AI decoder can learn.** On IBM chips, our AI decoder learned that
-a stored 1 fades into a 0 far more often than the reverse. Atoms and ions have different quirks; for example, an
-atom can simply disappear, which the hardware can detect [11][13]. A decoder trained on the device's own data, as
-ours is, adapts to whatever the dominant quirk is, without hand-written rules.
-
-**What we have not shown yet:**
-
-- We have not run on an ion or atom machine. Our measured data come from IBM's superconducting chips.
-- Those machines mostly use 2-D codes (surface and colour codes); our decoders handle the 1-D repetition code and
-  would need extending.
-- Round times are improving fast (Atom Computing reports up to 90 rounds of error correction with atom
-  replacement [13]; other groups report large increases in cycle rate), so the 100× margin will shrink over time.
-- Real control systems also need time to move data in and out; our numbers cover the decoding itself.
-
-**Next steps on this path:** noise models that mimic atoms and ions (including lost atoms), a decoder that uses
-"this atom is missing" flags (cheap to add to union-find), and tests with data from vendor emulators.
-
-## Who it helps
-
-- **Students and teachers:** see, hear and *touch* quantum error correction on real hardware for the price of an Arduino.
-- **Engineers building quantum computers:** a cheap bench to test how fast and accurate a decoder is on small embedded chips.
-- **Researchers:** real measurements of how individual qubits on IBM chips misbehave, from a free account.
-
-## Glossary
-
-| Word | Meaning |
-|---|---|
-| **Qubit** | A quantum bit. Fragile: it can flip by accident. |
-| **Physical vs logical qubit** | Physical = one real qubit on the chip. Logical = one protected bit of information spread over many physical qubits. |
-| **Error correction** | Spreading information redundantly and repairing it as errors happen. |
-| **Repetition code** | The simplest error-correcting code: store the same bit many times and keep checking that neighbours agree. |
-| **Code distance (d)** | How many copies protect the bit. Bigger d = more qubits = more protection. |
-| **Syndrome** | A clue: the answer to "are these two neighbours still the same?" |
-| **Decoder** | The program that turns clues into a decision about what went wrong. |
-| **Logical error rate** | How often the decoder still gets the final answer wrong. Lower is better. |
-| **Round / round time (τ)** | One cycle of checking all neighbours; τ is how often a new round of clues arrives. |
-| **Backlog** | Clues waiting to be decoded. If it keeps growing, the decoder is too slow. |
-| **Union-find, matching (PyMatching)** | Two well-known classical decoder algorithms. PyMatching is the accurate reference used by researchers. |
-| **T1 decay** | A qubit holding 1 slowly "relaxes" to 0, like a ball rolling downhill. |
-| **IBM ibm_fez / ibm_marrakesh** | Two of IBM's 156-qubit quantum computers, available free via the cloud. |
-
----
-
-# For experts: technical details
-
-## How it works
-
-1. **Accuracy on real hardware.** Bit-flip repetition codes at distance 3–25 (up to 49 qubits), 3 rounds of
-   mid-circuit syndrome measurement, logical |0⟩ and |1⟩. A line of qubits with no SWAP gates is found on the
-   chip; all 16 circuits go to IBM as one job (~6 s of QPU time). Shots are streamed to the STM32 over Bridge RPC,
-   which decodes them and counts CPU cycles per decoder (DWT cycle counter, interrupts masked).
-2. **Faster, smarter decoders.** A lazy-reset union-find runs 1.6–4× faster on the STM32 (2.3–4× on ibm_fez data, 1.6–3.2× on ibm_marrakesh) with identical results.
-   The Linux side learns an error probability for every edge of the decoding graph from the syndromes
-   ("p_ij" method), per logical state, and the STM32 uses them as integer weights. Runs are saved; old IBM jobs can
-   be re-imported by ID without QPU time.
-3. **Real-time backlog test.** Syndromes are bulk-loaded into STM32 RAM, then replayed as if one round arrived
-   every τ, with interrupts on. The STM32 decodes in order and records latency and backlog. A sweep finds each
-   decoder's limit τ* = mean decode time / rounds; in live mode the knob sets τ.
-4. **Edge AI decoder** (below).
-
 | Component | Role |
 |---|---|
-| Linux side (Qualcomm QRB2210, Debian) | Qiskit 2.x, qiskit-ibm-runtime, numpy; IBM jobs, saved runs, error-model learning, AI training, WebUI dashboard |
-| STM32U585 (Cortex-M33, 160 MHz) | Decoders (majority, greedy, union-find naive/fast/weighted, AI), real-time replay engine, DWT cycle counter |
-| Bridge RPC | Linux ↔ STM32 (msgpack); bulk loads only, never inside a timing measurement |
+| Linux side (Qualcomm QRB2210, Debian, Python 3.13 in Arduino App Lab) | Qiskit 2.x and qiskit-ibm-runtime, job submission, run storage, p<sub>ij</sub> estimation, MLP training, web dashboard |
+| STM32U585 (Cortex-M33, 160 MHz) | All decoders, real-time replay engine, DWT cycle counter |
+| Bridge RPC (msgpack, ~3.5 ms per call) | Linux ↔ STM32; bulk loads only, never inside a timing measurement |
+| Modulino Knob, Modulino Buzzer, 8×13 LED matrix | Knob sets τ in live mode; the matrix shows the backlog (log scale); the buzzer sounds when it grows |
 
-## Edge AI decoder
-
-- **Model:** one hidden layer (detection events + final data bits → 32 ReLU units → 1 output; 400–4,000 parameters),
-  trained in pure numpy on the board's Linux side (~2.6 s per model on the board), and evaluated only on held-out shots.
-- **Training (`code/qec_lab/python/qec_ai.py`):** inputs are the (R+1)(d−1) detection events plus the d final data bits
-  (21 binary inputs at d=5, R=3; up to 128). Target: whether data qubit 0 must be flipped. Float32 training with
-  logistic loss and Adam (lr 3e-3, L2 1e-3), 2,000 steps on mini-batches of 128 shots drawn from both logical states;
-  a single network serves both states. No framework: forward pass, backpropagation and Adam are written in numpy.
-- **Which shots train which model:** the model uploaded to the STM32 is trained on the back part of each state's shots,
-  and the STM32 decodes the front part, which the model never saw. The reported full-statistics AI error rate uses
-  2-fold cross-fitting over all shots (`qec_ai.cross_val`): a random split into two halves, train on one and score the
-  other, then swap, so every shot is decoded exactly once by a model that never saw it. The same split is used in the
-  laptop tool `code/qec_lab/tools/qec_offline.py`, where the board's C inference is checked against Python on every shot.
-- **Inference on the STM32:** weights quantised to 15-bit integers, sent over Bridge with a checksum (a d=5 model is
-  47 calls); integer arithmetic, **bit-exact with Python on every shot tested**; ~8.5 KB RAM. The first layer is
-  additions only, because the inputs are bits.
-- **Why it wins:** IBM hardware noise is strongly asymmetric (T1 decay of |1⟩); the network learns it from data,
-  matching and union-find cannot represent it. A control network given only detection events does worse than union-find.
-- **Where it loses:** at d ≥ 11 on ibm_fez it has an error floor of 0.15–0.4% (too few training shots for ~120 inputs),
-  while graph decoders reach < 0.05%. A practical design: AI up to d=9, matching above.
-- **Honest test:** 2-fold cross-fitting; the prepared state is only the training label, never an input (valid
-  because both logical states are equally likely in the experiment).
-- **Libraries considered:** TensorFlow Lite Micro (compile failures reported on the UNO Q core), Edge Impulse
-  (supported, but needs a Studio/west build), emlearn (needs scikit-learn/Keras); a hand-written C MLP was the most robust.
-
-| ibm_marrakesh, d | Best graph decoder | AI decoder |
-|---|---|---|
-| 3 | 10.6% (PyMatching weighted) | **6.3%** |
-| 5 | 3.6% (PyMatching, mixed weights) | **1.8%** |
-| 7 | 1.7% (PyMatching weighted) | **0.22%** |
-| 9 | 0.47% (PyMatching weighted) | **0.05%** |
-
-STM32 cost per AI decode: 1,909 cycles (11.9 µs) at d=3, 2,686 (16.8 µs) at d=5 — about the same as fast union-find.
-Real-time replay (ibm_marrakesh, d=5): AI limit **8.7 µs per round**, tied with weighted union-find, fast UF 10.4 µs,
-naive UF 19.8 µs. Second ibm_fez run: AI 2.8–3.2× fewer errors than the best graph decoder at d = 3–7.
-
-## Key measurements
-
-| Finding | Measured |
-|---|---|
-| Data error per round, \|0⟩ vs \|1⟩ | 0.3–1.2% vs 4.1–5.8% on ibm_fez (median 0.18% vs 3.4%); consistent with T1 decay |
-| Worst qubit found | Qubit 82 on ibm_marrakesh: 31% error per round in \|1⟩ |
-| Weighted vs uniform union-find | Up to 36% fewer logical errors (d=9, ibm_fez) |
-| Fast vs naive union-find on the STM32 | 1.6–4× fewer cycles, identical results |
-| Real-time limit on the STM32 | d=11: ~15 µs/round (fast UF), 41 µs (naive); d=5: 8.7 µs/round (AI) |
-| Microbenchmark vs real-time replay | Replay ~1.5× slower (detector computation, unpacking, interrupts) |
-| QPU time per experiment | ~6 s for 16 circuits |
-
-All tables, generated from the raw data: [`results/results_tables.md`](results/results_tables.md).
-
-## Repository layout
+## 8. Repository layout
 
 ```
-QEC_Edge_Lab_submission/
 ├── README.md                 this file
+├── ROADMAP.md                what to do next, hardware notes
 ├── LICENSE                   MIT
-├── code/
-│   └── qec_lab/              the main App Lab app
-│       ├── python/           main.py (app), qec_common.py (graph, error model, run storage), qec_ai.py (AI decoder),
-│       │                     requirements.txt, ibm_config.example.json
-│       ├── sketch/           sketch.ino, qec_decoders.h (decoders), qec_rt.h (real-time replay), qec_ai.h (AI inference)
-│       ├── assets/           web dashboard (index.html, app.js, style.css, libs/)
-│       └── tools/            qec_offline.py (laptop: full statistics + PyMatching), export_web_demo.py (web demo data), plot_results.py (charts)
-├── data/ibm_runs/            raw shots of the IBM runs (.npz + .json), board results, offline CSVs
-├── results/results_tables.md all result tables, generated from data/
-├── docs/                     GitHub Pages site: interactive web demo (docs/demo/)
-├── media/                    photos, architecture diagram, error-correction diagram, results charts
-├── presentation/             slides (LaTeX source + PDF): full deck and an 8-slide pitch version with backup slides
+├── code/qec_lab/             the Arduino App Lab app
+│   ├── python/               main.py (app, circuits, jobs), qec_common.py (graph, p_ij, run storage), qec_ai.py (MLP)
+│   ├── sketch/               sketch.ino, qec_decoders.h, qec_rt.h (replay), qec_ai.h (MLP inference)
+│   ├── assets/               web dashboard
+│   └── tools/                qec_offline.py (full statistics + PyMatching), draw_circuits.py, plot_results.py, export_web_demo.py
+├── data/ibm_runs/            raw shots (.npz + .json), board results, offline CSVs
+├── results/results_tables.md all result tables
+├── docs/demo/                GitHub Pages interactive demo
+├── media/                    circuits, charts, diagrams, photos
+├── presentation/             slides (LaTeX + PDF)
 └── qec_lab_import.zip        the app, ready to import into Arduino App Lab
 ```
 
-## Build and run
+## 9. Build and run
 
-1. Create a free IBM Quantum account (Open Plan); copy your API key and instance CRN. *(Optional: the
-   "Noise model" mode works without any account.)*
-2. **Easiest:** import `qec_lab_import.zip` (in the repository root) into Arduino App Lab; it contains `app.yaml`
-   (with the WebUI brick) and `sketch/sketch.yaml` (with the Modulino library). **Manual alternative:** in Arduino App Lab 0.12,
-   create an app `qec_lab`, add the **WebUI - HTML** brick and the **Modulino** sketch library.
-3. *(Manual alternative only)* Copy `code/qec_lab/{python,sketch,assets}` into the app. **Add the brick first, then copy** (adding the brick resets `assets/`).
-   Don't overwrite App Lab's own `app.yaml` and `sketch/sketch.yaml`.
-4. Edit `python/ibm_config.json` (the zip has a placeholder; otherwise copy `python/ibm_config.example.json`) and fill in your token and instance. Never publish it.
-5. Connect the Modulino Knob and Buzzer (Qwiic) and run the app.
-6. Open the dashboard on port 7000. If the Wi-Fi blocks device-to-device traffic: `ssh -N -L 7000:127.0.0.1:7000 arduino@<board-ip>`.
-7. **Accuracy tab:** noise model first, then IBM hardware. **Real-time tab:** load a saved run, sweep, then live mode with the knob.
-8. Full statistics on a laptop: `pip install numpy pymatching`, copy `python/runs/` from the board, run
-   `python3 tools/qec_offline.py ./runs`.
+1. Create a free IBM Quantum account (Open Plan); copy the API key and instance CRN. The "noise model" mode works
+   without an account.
+2. Import `qec_lab_import.zip` into Arduino App Lab (it includes the WebUI brick and the Modulino library).
+3. Edit `python/ibm_config.json` with your token and instance. Never publish it.
+4. Connect the Modulino Knob and Buzzer (Qwiic) and run the app. The dashboard is on port 7000; if the network blocks
+   it, use `ssh -N -L 7000:127.0.0.1:7000 arduino@<board-ip>`.
+5. **Accuracy tab:** noise model first, then IBM hardware. **Real-time tab:** load a saved run, sweep τ, then live mode.
+6. On a laptop: `pip install numpy pymatching`, copy `python/runs/` from the board, then
+   `python3 code/qec_lab/tools/qec_offline.py ./runs`. Circuit pictures:
+   `python3 code/qec_lab/tools/draw_circuits.py data/ibm_runs/<run>.json media/` (needs qiskit, matplotlib, pylatexenc).
 
-## Limitations
+## 10. Credits and licence
 
-- **Emulated real time:** real hardware syndromes are replayed on the STM32; the timing is real, but the loop with
-  the quantum computer is not closed (the network adds milliseconds).
-- **Too slow for superconducting qubits** (~9–15 µs vs ~1 µs per round); likely fast enough for trapped-ion and
-  neutral-atom machines (rounds of roughly 100 µs to a few ms).
-- **Correction in software, after the run:** as in Google's and IBM's memory experiments, corrections are applied to the
-  measured result (Pauli-frame tracking), not sent back to the qubits; decoding happens after each IBM job.
-- **Repetition code only** (bit flips, not phase errors), so it does not protect an arbitrary quantum state; 2-D codes
-  (surface or colour codes) are the next step.
-- **STM32 statistics** use 400 shots per distance; full statistics (4,000) come from the laptop tool, which runs the
-  same C decoder code.
-- **Small numbers behind the biggest ratios:** at the lowest error rates the headline ratios rest on a handful of failures
-  (9.5× is 2 failures against 19 in 4,000 shots; 0.075% is 3 failures), so they carry large uncertainty.
-- **The AI's advantage is specific to this experiment:** it comes from state-dependent decay (a stored 1 fading to 0) in a
-  bit-flip memory; it may not carry over to 2-D codes. The energy comparison is not like-for-like either: GPU decoders
-  handle far larger codes than our 737-parameter network.
-- **Energy and impact claims are projections:** the board's power during our decoding runs is not measured yet (public
-  measurements: 0.5–3 W), the environmental benefit is indirect and long-term, and custom decoder chips use far less power.
-
-## Credits and tools
-
-Arduino UNO Q, Arduino App Lab, Modulino Knob and Buzzer; IBM Quantum (Qiskit, qiskit-ibm-runtime);
-PyMatching (laptop reference decoder); socket.io client 4.7.5 (dashboard). Union-find decoding after
-Delfosse & Nickerson; edge-probability estimation after the "p_ij" correlation method used in repetition-code
-experiments.
-
-## License
-
-Code and documentation: MIT License (see `LICENSE`). The bundled socket.io client keeps its own MIT licence.
+Arduino UNO Q, Arduino App Lab, Modulino Knob and Buzzer; IBM Quantum (Qiskit, qiskit-ibm-runtime); PyMatching;
+socket.io client 4.7.5. Union-find decoding after Delfosse and Nickerson [6]; matching reference PyMatching [7]; p<sub>ij</sub> method as in [8]. Code and documentation: MIT License (see
+`LICENSE`); the bundled socket.io client keeps its own MIT licence.
 
 ## References
 
-1. Riverlane — *Why the decoder is the beating heart of QEC*. https://www.riverlane.com/blog/why-the-decoder-is-the-beating-heart-of-qec
-2. Google Quantum AI and collaborators — *Quantum error correction below the surface code threshold*, Nature 638, 920–926 (2025). arXiv: https://arxiv.org/abs/2408.13687
-3. Bausch et al. (Google DeepMind & Google Quantum AI) — *Learning high-accuracy error decoding for quantum processors* (AlphaQubit), Nature (2024). Coverage: https://thedebrief.org/google-deepminds-breakthrough-alphaqubit-closing-in-on-the-holy-grail-of-quantum-computing/
-4. Senior et al. — *A scalable and real-time neural decoder for topological quantum codes* (preprint, 2025). https://arxiv.org/abs/2512.07737
-5. Riverlane — *Introducing the world's first low-latency QEC experiment*. https://www.riverlane.com/news/introducing-the-world-s-first-low-latency-qec-experiment
-6. The Quantum Insider — *Riverlane publishes hardware decoder for real-time quantum error correction* (Dec 2025). https://thequantuminsider.com/2025/12/18/riverlane-hardware-decoder-real-time-qec/
-7. NVIDIA — *CUDA-Q QEC 0.6 enables real-time QEC with NVQLink* (Apr 2026). https://nvidia.github.io/cuda-quantum/blogs/blog/2026/04/14/cudaq-qec-0.6/
-8. IBM Quantum — *Real-time decoding of the gross code memory with FPGAs* (arXiv 2510.21600, 2025). https://arxiv.org/abs/2510.21600 ; algorithm: *Improved belief propagation is sufficient for real-time decoding of quantum memory*, https://arxiv.org/abs/2506.01779
-9. IonQ real-time decoding study, modelling a trapped-ion architecture with a 1–5 ms cycle time (coverage). https://postquantum.com/engineering-news/ionq-real-time-decoder-cpu/
-10. *The classical stack behind quantum error correction* (overview citing ~1 µs rounds for superconducting qubits and ~1 ms for trapped ions and neutral atoms). https://postquantum.com/quantum-computing/qec-classical-stack-infrastructure/
-11. Bluvstein et al. (Harvard, QuEra, MIT) — *A fault-tolerant neutral-atom architecture for universal quantum computation*, Nature (Nov 2025). arXiv: https://arxiv.org/abs/2506.20661
-12. Quantum Computing Report — *Quantinuum demonstrates 99.9995% logical memory fidelity on Helios trapped-ion processor*. https://quantumcomputingreport.com/quantinuum-demonstrates-99-9995-logical-memory-fidelity-on-helios-trapped-ion-processor/
-13. Atom Computing — *Quantum error correction with toric code*. https://atom-computing.com/quantum-error-correction-with-toric-code/
-14. European Commission — *Quantum Europe Strategy* (2 July 2025). https://digital-strategy.ec.europa.eu/en/library/quantum-europe-strategy
-15. Jeff Geerling — *The Arduino Uno Q is a weird hybrid SBC* (power measurements: ~0.5 W idle, 2–3 W at full load). https://www.jeffgeerling.com/blog/2025/arduino-uno-q-weird-hybrid-sbc
-16. Barber et al. (Riverlane) — *A real-time, scalable, fast and highly resource efficient decoder for a quantum computer* (ASIC: ~8 mW). https://arxiv.org/abs/2309.05558
-17. NVIDIA — *H100 Tensor Core GPU* (SXM: up to 700 W). https://www.nvidia.com/en-us/data-center/h100/
+1. Google Quantum AI and collaborators, *Quantum error correction below the surface code threshold*, Nature 638, 920–926 (2025). https://arxiv.org/abs/2408.13687
+2. Bausch et al., *Learning high-accuracy error decoding for quantum processors* (AlphaQubit), Nature 635, 834–840 (2024). Preprint: https://arxiv.org/abs/2310.05900
+3. Barber et al. (Riverlane), *A real-time, scalable, fast and highly resource efficient decoder for a quantum computer*. https://arxiv.org/abs/2309.05558
+4. NVIDIA, *CUDA-Q QEC 0.6 enables real-time QEC with NVQLink* (2026). https://nvidia.github.io/cuda-quantum/blogs/blog/2026/04/14/cudaq-qec-0.6/
+5. IBM Quantum, *Real-time decoding of the gross code memory with FPGAs*. https://arxiv.org/abs/2510.21600
+6. Delfosse and Nickerson, *Almost-linear time decoding algorithm for topological codes*, Quantum 5, 595 (2021). https://arxiv.org/abs/1709.06218
+7. Higgott and Gidney, *Sparse Blossom: correcting a million errors per core second with minimum-weight matching* (PyMatching 2). https://arxiv.org/abs/2303.15933
+8. Google Quantum AI, *Exponential suppression of bit or phase errors with cyclic error correction*, Nature 595, 383–387 (2021) (repetition-code memory experiments and the p<sub>ij</sub> method). https://arxiv.org/abs/2102.06132
+9. Neural repetition-code decoder on IBM hardware ("FiLM"), found in a literature search and not yet read in full. https://arxiv.org/abs/2601.16123
+10. Bluvstein et al., *Architectural mechanisms of a universal fault-tolerant quantum computer* (neutral atoms, 2025). https://arxiv.org/abs/2506.20661
