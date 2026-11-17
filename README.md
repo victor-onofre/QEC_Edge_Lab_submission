@@ -11,7 +11,12 @@ hackathon, see the [`junction_submission`](https://github.com/victor-onofre/QEC_
 - Interactive demo on real shots: https://victor-onofre.github.io/QEC_Edge_Lab_submission/demo/
 - Slides: [`presentation/`](presentation/) · Next steps: [`ROADMAP.md`](ROADMAP.md)
 
-![The Arduino UNO Q with the Modulino Knob and Buzzer](media/board.jpg)
+| The board (official image) | Our setup during a run |
+|---|---|
+| ![Arduino UNO Q, top view](media/arduino/uno_q_top.png) | ![The Arduino UNO Q with the Modulino Knob and Buzzer](media/board.jpg) |
+
+Left: Arduino UNO Q, image © Arduino, CC BY-SA 4.0 ([source and attribution](media/arduino/ATTRIBUTION.md)).
+Right: the board used for this project, with a Modulino Knob and Buzzer on the Qwiic connector.
 
 > **Correction to the hackathon claim (November 2026).** The submission said that an on-device neural network makes
 > "up to 9.5× fewer errors than the best classical decoder". That comparison is misleading. Decoders that look only at
@@ -424,6 +429,15 @@ superconducting cycle times and well inside millisecond-scale rounds.
 
 ## 8. System
 
+The Arduino UNO Q carries two processors on one board: a Qualcomm QRB2210 running Linux and an STM32U585
+microcontroller. In this project the first plans and learns, and the second decodes and keeps time.
+
+![Arduino UNO Q main components](media/arduino/uno_q_components.png)
+
+*Main components of the UNO Q. Image © Arduino, CC BY-SA 4.0 ([attribution](media/arduino/ATTRIBUTION.md)).*
+
+How the project uses them:
+
 ![Architecture](media/architecture.png)
 
 | Component | Role |
@@ -447,7 +461,7 @@ superconducting cycle times and well inside millisecond-scale rounds.
 ├── data/ibm_runs/            raw shots (.npz + .json), board results, offline CSVs
 ├── results/results_tables.md all result tables
 ├── docs/demo/                GitHub Pages interactive demo
-├── media/                    circuits, charts, diagrams, photos
+├── media/                    circuits, charts, diagrams, photos; media/arduino/ holds official Arduino images (CC BY-SA 4.0)
 ├── presentation/             slides (LaTeX + PDF)
 └── qec_lab_import.zip        the app, ready to import into Arduino App Lab
 ```
@@ -469,7 +483,9 @@ superconducting cycle times and well inside millisecond-scale rounds.
 
 Arduino UNO Q, Arduino App Lab, Modulino Knob and Buzzer; IBM Quantum (Qiskit, qiskit-ibm-runtime); PyMatching;
 socket.io client 4.7.5. Union-find decoding after Delfosse and Nickerson [6]; matching reference PyMatching [7]; p<sub>ij</sub> method as in [8]. Code and documentation: MIT License (see
-`LICENSE`); the bundled socket.io client keeps its own MIT licence.
+`LICENSE`); the bundled socket.io client keeps its own MIT licence. The two official Arduino images in
+`media/arduino/` are © Arduino under CC BY-SA 4.0 and are not covered by the MIT licence (see
+[`media/arduino/ATTRIBUTION.md`](media/arduino/ATTRIBUTION.md)). This project is not affiliated with Arduino.
 
 ## References
 
