@@ -16,10 +16,11 @@ hackathon, see the [`junction_submission`](https://github.com/victor-onofre/QEC_
 > **Correction to the hackathon claim (November 2026).** The submission said that an on-device neural network makes
 > "up to 9.5× fewer errors than the best classical decoder". That comparison is misleading. Decoders that look only at
 > the final data readout and ignore every syndrome (a threshold on the number of 1s, or a per-qubit naive-Bayes rule)
-> beat every graph decoder on ibm_fez at all distances, and match the network almost everywhere. The network mostly
+> beat every graph decoder on ibm_fez at every distance where the graph decoders still fail (d ≤ 11), and match or
+> beat the network except at the smallest distances (d = 3 on ibm_fez, d ≤ 7 on ibm_marrakesh). The network mostly
 > learned the state-dependent decay of |1⟩ and which qubits to distrust, which the graph decoders were never told.
-> See [section 5.3](#53-the-neural-decoder-and-what-it-actually-learns). The video, the slides and the demo page
-> still carry the original wording.
+> See [section 5.3](#53-the-neural-decoder-and-what-it-actually-learns). The video, the slides, the demo page and
+> [`results/results_tables.md`](results/results_tables.md) still carry the original wording.
 
 ## Summary
 
@@ -33,6 +34,7 @@ hackathon, see the [`junction_submission`](https://github.com/victor-onofre/QEC_
 | Error suppression | ibm_fez: weighted union-find 4.8% at d=3 → 0.075% at d=11 (193 → 3 failures in 4,000) |
 | Decode time on the STM32 | fast union-find 7.7 µs (d=3) to 62 µs (d=25) per shot; MLP 11.9 µs (d=3), 16.8 µs (d=5) |
 | Real-time replay | d=5: MLP and weighted union-find have a limit τ* ≈ 8.7 µs per round; both kept up at the tested τ = 10 µs |
+| Other platforms | About 10× too slow for the fastest superconducting cycles; a margin of about 100× or more on millisecond-scale rounds (neutral atoms, trapped ions), for these small 1-D codes only ([section 6](#6-slower-platforms-neutral-atoms-and-trapped-ions)) |
 
 ## 1. What this is: a memory experiment
 
@@ -141,7 +143,7 @@ edge it contains. Code: `qec::configure` in [`sketch/qec_decoders.h`](code/qec_l
 `build_graph` in [`python/qec_common.py`](code/qec_lab/python/qec_common.py) (same edge order in both).
 
 **Edge probabilities from the data.** The Linux side estimates the probability of each bulk edge from pairwise
-detector correlations (the "p<sub>ij</sub>" method used in repetition-code experiments):
+detector correlations (the "p<sub>ij</sub>" method used in repetition-code experiments [8]):
 
 p<sub>ij</sub> = ½ − ½ √( 1 − 4(⟨x<sub>i</sub>x<sub>j</sub>⟩ − ⟨x<sub>i</sub>⟩⟨x<sub>j</sub>⟩) / (1 − 2⟨x<sub>i</sub>⟩ − 2⟨x<sub>j</sub>⟩ + 4⟨x<sub>i</sub>x<sub>j</sub>⟩) )
 
@@ -156,11 +158,11 @@ clipped to 1…15 and packed 4 bits per edge.
 |---|---|---|---|---|
 | Majority vote | STM32 | No | None | Baseline: majority of the final data bits |
 | Greedy matching | STM32 | Yes | None | Repeatedly pairs the closest detectors (Manhattan distance) or a detector with the nearer boundary |
-| Union-find, naive | STM32 | Yes | None | Delfosse–Nickerson cluster growth by half-edges, then peeling on a spanning forest |
+| Union-find, naive | STM32 | Yes | None | Delfosse–Nickerson [6] cluster growth by half-edges, then peeling on a spanning forest |
 | Union-find, fast | STM32 | Yes | None | Same answers; early exit on empty syndromes, lazy per-shot reset, growth visits only the vertices of active clusters |
 | Union-find, weighted | STM32 | Yes | p<sub>ij</sub> per edge, per logical state | Integer capacity per edge; capacity 2 everywhere reproduces the unweighted decoder |
 | MLP (multi-layer perceptron) | STM32 | Yes, plus the final data bits | Learned from labelled shots | (R+1)(d−1) + d binary inputs → 32 ReLU → 1 output: flip data qubit 0 or not |
-| MWPM (PyMatching) | Laptop | Yes | None, per-state p<sub>ij</sub>, or mixed-state p<sub>ij</sub> | Reference; "mixed" is the fair, label-free baseline |
+| MWPM (PyMatching [7]) | Laptop | Yes | None, per-state p<sub>ij</sub>, or mixed-state p<sub>ij</sub> | Reference; "mixed" is the fair, label-free baseline |
 
 The laptop tool [`tools/qec_offline.py`](code/qec_lab/tools/qec_offline.py) compiles the same C decoder files that run on
 the STM32, so the error rates below are what the microcontroller's code produces.
@@ -207,21 +209,28 @@ for 3 failures and 0.30–0.74% for 19.
 | 21 | 41 | 27 | 2 | 2 | 0 | 1 | 0 |
 | 25 | 49 | 13 | 0 | 0 | 0 | 0 | 0 |
 
-The logical error falls with distance on both chips for every decoder.
+The logical error falls overall with distance on both chips for every decoder (not monotonically at every step:
+on ibm_marrakesh majority vote goes from 67 to 72 failures between d = 11 and 15).
 
-**The ibm_marrakesh numbers are dominated by one bad qubit, and it is the logical observable.** On that chip, data
+**The ibm_marrakesh numbers are dominated by a bad qubit that is also the logical observable.** On that chip, data
 qubit 0 (physical qubit 82) reads 1 in about 26% of the logical-|0⟩ shots and 29% of the logical-|1⟩ shots, at every
 distance: its readout carries almost no information. Since the observable is defined as the value of data qubit 0,
 the marrakesh comparison mostly measures how well a decoder copes with a dead observable qubit. The line of qubits
 is chosen by a seeded random walk on the coupling map (`find_line`), not from calibration data, so the same line was
-used on both chips; on ibm_fez the same qubit behaves normally in |0⟩ (about 1% or less read as 1).
+used on both chips. On ibm_fez the same qubit reads correctly in |0⟩ (about 1% read as 1) but is among the worst in
+|1⟩ (18–29% of shots read 0, against a median of 13–15%). At d ≥ 15 the ibm_marrakesh line contains a second nearly
+dead qubit (data qubit 11, physical qubit 26), which reads 1 in only 8–9% of the logical-|1⟩ shots.
 
-![Logical error vs distance, ibm_marrakesh](media/logical_error_vs_distance_ibm_marrakesh.png)
 ![Logical error vs distance, ibm_fez](media/logical_error_vs_distance_ibm_fez.png)
+![Logical error vs distance, ibm_marrakesh](media/logical_error_vs_distance_ibm_marrakesh.png)
 
 Both charts are drawn by [`tools/plot_results.py`](code/qec_lab/tools/plot_results.py) and include the two readout-only
-baselines of section 5.3 (green). A hollow marker in the grey band means 0 failures in 4,000 shots. For clarity they
-show one graph decoder from the STM32 (weighted union-find) and one label-free reference (MWPM with mixed weights).
+baselines of section 5.3 (green). Notes for reading them:
+
+- They show d = 3…11 only. At d ≥ 15 the graph decoders reach 0 failures, while the threshold rule and the MLP do not.
+- A hollow marker in the grey band means 0 failures in 4,000 shots (95% upper bound about 0.1%). There are no error bars.
+- On ibm_fez the threshold and naive-Bayes rules give identical counts, so the two green lines coincide.
+- "Weighted union-find" uses per-state weights, which rely on the prepared state; "MWPM, mixed weights" does not.
 
 ### 5.2 State-dependent noise
 
@@ -235,15 +244,18 @@ over the 25 data qubits; layer 0 is the edge layer before the first syndrome rou
 | ibm_marrakesh | \|0⟩ | 0.60% | 0.15% / 0.31% / 0.68% | 0.40% | 1.9% |
 | ibm_marrakesh | \|1⟩ | 0.90% | 8.1% / 7.8% / 8.9% | 7.2% | 1.6% |
 
-- **A data qubit in |1⟩ flips about 18–23 times more often than one in |0⟩,** in the per-qubit median. Averaged over each code
-  instead, the ratio stored with the board results is 5–14 on ibm_fez and 3–7 on ibm_marrakesh.
+- **A data qubit in |1⟩ flips roughly 20 times more often than one in |0⟩,** in the per-qubit median (18× and 24×
+  from the table). The |0⟩ values are small and close to the estimator's lower clip, so the ratio is imprecise;
+  averaged over each code instead, the ratio stored with the board results is 5–14 on ibm_fez and 3–7 on
+  ibm_marrakesh. (`results/results_tables.md` quotes 19× and 16× from an earlier estimate with different medians.)
 - **The excess appears only after a full round.** Layer 0 is below 1% for both states; layers 1–3 jump to 4–9% for
   |1⟩. That is what decay during the ancilla measurement and reset would produce.
 - **Almost all logical failures are logical-|1⟩ shots.** Majority vote at d = 3: 0 failures on |0⟩ and 206 on |1⟩
   (fez-2); 40 and 690 on ibm_marrakesh.
 
 This breaks the assumption behind matching and union-find on this graph, where an edge has one probability whatever
-the data state. Per-state weights recover part of the gap, at the price of using knowledge of the prepared state.
+the data state. Data-derived weights help relative to uniform ones, but per-state weights, which use knowledge of
+the prepared state, are not consistently better than label-free mixed weights, except at d = 3 (tables in 5.1).
 
 ### 5.3 The neural decoder and what it actually learns
 
@@ -276,14 +288,16 @@ per-state ones that use the label, so it is generous to the graph decoders.
 
 Reading:
 
-- **On ibm_fez, ignoring the syndromes beats every graph decoder at every distance,** and beats the MLP for d ≥ 5.
-  The MLP's apparent error floor of 0.2–0.4% at large d is a training artefact: more inputs, the same 2,000 training
-  shots per fold.
+- **On ibm_fez, ignoring the syndromes beats every graph decoder at every distance where they still fail (d ≤ 11),**
+  and beats the MLP for d ≥ 5. At d ≥ 15 the graph decoders and naive Bayes are at 0 of 4,000, while the threshold
+  rule shows a few failures (1 at d = 15 and 3 at d = 25 on fez-2) and the MLP sits at 0.15–0.43%. That MLP floor is
+  a training artefact: more inputs, the same 2,000 training shots per fold.
 - **On ibm_marrakesh the threshold is not enough** (it loses to the graph decoders at d = 3 and 5), because one data
   qubit is uninformative. Naive Bayes, which can learn that, gets most of the way to the MLP: the 9.5× of the
   hackathon write-up (19 failures against 2 at d = 9) is matched exactly without any syndrome.
 - **The syndromes add a measurable gain to the MLP only at small distance:** d ≤ 7 on ibm_marrakesh and d = 3 on
-  ibm_fez. So the ratio "MLP against the best graph decoder" mostly measures a state prior and per-qubit readout
+  ibm_fez. There the MLP also beats the best possible lookup table on the final bits alone (an in-sample bound: 108
+  failures at d = 3 on fez-2, and 311 / 102 / 17 at d = 3 / 5 / 7 on ibm_marrakesh), so the gain does come from the syndromes. So the ratio "MLP against the best graph decoder" mostly measures a state prior and per-qubit readout
   statistics that the graph decoders lack, not learning of error correlations.
 - **The effect is specific to this experiment.** It needs data in a product state whose readout reveals the logical
   value, plus strongly biased decay. With a hidden random X-frame on the data, or in the phase-flip code, the
@@ -329,17 +343,69 @@ decode time includes detector computation but not unpacking the shot from memory
 
 **ibm_fez (fez-2), d = 11:** UF fast τ* = 14.8 µs, UF weighted 15.5 µs, UF naive 41 µs. Near the limit (83% busy)
 the p99 latency is already 1.2 ms. Decode time inside the replay is about 1.5× the isolated measurement, because it
-includes detector computation (1,523 cycles, 9.5 µs at d=11), which the isolated figures exclude, and interrupts.
+includes detector computation (part of the 1,523 cycles, 9.5 µs, of the majority column at d=11), which the other
+isolated figures exclude, and interrupts.
 
-For scale: the fastest superconducting error-correction cycles are about 1 µs [1], roughly ten times shorter than
-this limit (we did not record the round duration of our own circuits on Heron).
-Neutral-atom and trapped-ion platforms run rounds of roughly 100 µs to a few ms, which leaves a microcontroller a
-wide margin for a small code [10]. Dedicated decoders for superconducting hardware run on FPGAs, GPUs and custom
-chips [2–5].
+What these limits mean for different hardware platforms is discussed in [section 6](#6-slower-platforms-neutral-atoms-and-trapped-ions).
 
 All tables: [`results/results_tables.md`](results/results_tables.md). Raw shots: [`data/ibm_runs/`](data/ibm_runs/).
 
-## 6. Limitations
+## 6. Slower platforms: neutral atoms and trapped ions
+
+A decoder is fast enough when its throughput exceeds the rate at which syndromes arrive; otherwise the backlog grows
+without bound, which is what the replay test shows. So the relevant hardware number is the duration of one
+syndrome-extraction round.
+
+| Platform | Typical round | Our measured limit τ* | Ratio |
+|---|---|---|---|
+| Superconducting (fastest reported cycles) | ~1 µs [1] | 8.7 µs (d=5), 14.8 µs (d=11) | 0.1×: about ten times too slow |
+| Neutral atoms | 4.45 ms per round in a recent experiment [10] | same | ~500× (d=5), ~300× (d=11) |
+| Trapped ions | a millisecond or more [12]; a design study for a future architecture assumes 1–5 ms [11] | same | ~100× or more |
+
+The round times come from the cited sources, not from measurements of ours; on these platforms readout and moving
+atoms or ions dominate the round, and the times are falling as the hardware improves. Real-time decoders for
+superconducting hardware run on FPGAs, GPUs and custom chips [1, 3–5]; on the slow platforms, neural decoders on
+GPUs have been reported at 0.2–0.5 ms per round [13].
+
+**Why the ~100× does not transfer directly.** It is measured on a 1-D repetition code with 3 rounds. Five things
+stand between that number and a claim about a real atom or ion machine:
+
+1. **Code size.** A distance-d rotated surface code has (d²−1)/2 detectors per round for one basis, against d−1 for
+   the repetition code, and its decoding graph has higher degree and diagonal edges. Union-find cost grows roughly
+   with the number of defects and the cluster sizes. As a rough proxy only: our d = 25 repetition code has 24
+   detectors per round, as many as a d = 7 surface code in one basis. With fast union-find on ibm_fez data it costs
+   about 62 µs per 3-round shot in isolation, roughly 85–95 µs with detector computation and replay overhead, so
+   about 30 µs per round: a margin of a few tens at 1 ms. A d = 7 surface-code memory would also run about 7 rounds,
+   and a computation needs both bases (48 detectors per round). The 2-D number has to be measured, not extrapolated
+   (roadmap #5). These platforms also favour codes that are not matching problems at all, such as colour codes and
+   qLDPC codes [11][13], for which union-find on a simple graph does not apply directly.
+2. **Transport.** In our setup shots reach the microcontroller over the Bridge RPC at 13–15 ms per shot (two calls
+   per shot, so about 7 ms per call), slower than any of these rounds. The replay test avoids this by loading all shots into RAM first. A real system needs a direct,
+   deterministic link from the readout electronics to the microcontroller (roadmap #8).
+3. **Different noise.** Neutral atoms are limited by gate errors, leakage and atom loss; trapped ions by gate errors
+   and dephasing during transport and idling. Many of these faults can be heralded: erasure conversion [14], loss
+   detection [10]. Union-find was designed for mixed erasure and Pauli noise [6]: a heralded erasure on a known edge
+   is an edge that starts fully grown. Atom loss is harder, because a lost atom corrupts every later gate that
+   touches it, so the error model changes and not just one edge (roadmap #10). Nothing in our measured noise model
+   carries over.
+4. **What real time is needed for.** A memory experiment can be decoded offline. Real-time decoding matters once
+   logical operations depend on decoded outcomes (feed-forward, for example in magic-state injection). There the
+   requirement is on latency as well as throughput, and our replay shows latency rising sharply near the limit.
+5. **Several logical qubits.** One board would have to serve many code patches, or one board per patch is needed;
+   the margin is the budget for that. Transversal gates between patches call for correlated decoding across them,
+   and parallel window decoding relaxes the single-core throughput condition; neither is explored here.
+
+**On learned decoders for these platforms.** Machine-learning decoders have been used in neutral-atom [10] and
+trapped-ion [13] experiments, run offline and trained on very large simulated data sets, and adapting to
+device-specific noise is a real motivation. Section 5.3 is a caution
+for small networks trained on memory experiments: ours gained mostly from the readout statistics of a product
+state, an effect that says nothing about other platforms or codes.
+
+**Status.** We have no data from an atom or ion machine and no 2-D decoder. The claim supported by this repository
+is narrow: a 160 MHz microcontroller decodes small repetition codes at 9–15 µs per round, which is far from
+superconducting cycle times and well inside millisecond-scale rounds.
+
+## 7. Limitations
 
 - **Repetition code only.** Distance d against X errors, 1 against Z errors; no logical qubit is protected.
 - **Three rounds.** No error per round, no Λ. Boundary rounds dominate.
@@ -350,12 +416,13 @@ All tables: [`results/results_tables.md`](results/results_tables.md). Raw shots:
 - **The observable sits on a bad qubit on ibm_marrakesh,** and the qubit line is not chosen from calibration data (5.1).
 - **Not recorded:** round duration, measurement and reset lengths, T1 and readout error of the qubits used.
 - **No leakage handling, no soft information, no dynamical decoupling, no post-selection.**
+- **No atom or ion data, no 2-D code.** The discussion in section 6 is an argument from round times, not a test.
 - **Real time is a replay.** The timing on the STM32 is real; the loop with the QPU is not closed, and decoding
   happens after the job.
 - **STM32 statistics** use 400 shots per distance; the 4,000-shot error rates come from the same C code compiled on a laptop.
-- **Power not measured.** Public measurements of the board give 0.5 W idle and 2–3 W under load.
+- **Power not measured.** An independent review of the board reports about 0.5 W idle and 2–3 W under load [15].
 
-## 7. System
+## 8. System
 
 ![Architecture](media/architecture.png)
 
@@ -363,10 +430,10 @@ All tables: [`results/results_tables.md`](results/results_tables.md). Raw shots:
 |---|---|
 | Linux side (Qualcomm QRB2210, Debian, Python 3.13 in Arduino App Lab) | Qiskit 2.x and qiskit-ibm-runtime, job submission, run storage, p<sub>ij</sub> estimation, MLP training, web dashboard |
 | STM32U585 (Cortex-M33, 160 MHz) | All decoders, real-time replay engine, DWT cycle counter |
-| Bridge RPC (msgpack, ~3.5 ms per call) | Linux ↔ STM32; bulk loads only, never inside a timing measurement |
+| Bridge RPC (msgpack; 13–15 ms per shot at two calls per shot) | Linux ↔ STM32; bulk loads only, never inside a timing measurement |
 | Modulino Knob, Modulino Buzzer, 8×13 LED matrix | Knob sets τ in live mode; the matrix shows the backlog (log scale); the buzzer sounds when it grows |
 
-## 8. Repository layout
+## 9. Repository layout
 
 ```
 ├── README.md                 this file
@@ -385,7 +452,7 @@ All tables: [`results/results_tables.md`](results/results_tables.md). Raw shots:
 └── qec_lab_import.zip        the app, ready to import into Arduino App Lab
 ```
 
-## 9. Build and run
+## 10. Build and run
 
 1. Create a free IBM Quantum account (Open Plan); copy the API key and instance CRN. The "noise model" mode works
    without an account.
@@ -398,7 +465,7 @@ All tables: [`results/results_tables.md`](results/results_tables.md). Raw shots:
    `python3 code/qec_lab/tools/qec_offline.py ./runs`. Circuit pictures:
    `python3 code/qec_lab/tools/draw_circuits.py data/ibm_runs/<run>.json media/` (needs qiskit, matplotlib, pylatexenc).
 
-## 10. Credits and licence
+## 11. Credits and licence
 
 Arduino UNO Q, Arduino App Lab, Modulino Knob and Buzzer; IBM Quantum (Qiskit, qiskit-ibm-runtime); PyMatching;
 socket.io client 4.7.5. Union-find decoding after Delfosse and Nickerson [6]; matching reference PyMatching [7]; p<sub>ij</sub> method as in [8]. Code and documentation: MIT License (see
@@ -416,3 +483,8 @@ socket.io client 4.7.5. Union-find decoding after Delfosse and Nickerson [6]; ma
 8. Google Quantum AI, *Exponential suppression of bit or phase errors with cyclic error correction*, Nature 595, 383–387 (2021) (repetition-code memory experiments and the p<sub>ij</sub> method). https://arxiv.org/abs/2102.06132
 9. Neural repetition-code decoder on IBM hardware ("FiLM"), found in a literature search and not yet read in full. https://arxiv.org/abs/2601.16123
 10. Bluvstein et al., *Architectural mechanisms of a universal fault-tolerant quantum computer* (neutral atoms, 2025). https://arxiv.org/abs/2506.20661
+11. IonQ real-time decoding study modelling a trapped-ion architecture with a 1–5 ms cycle (news coverage). https://postquantum.com/engineering-news/ionq-real-time-decoder-cpu/
+12. *The classical stack behind quantum error correction* (overview quoting ~1 µs rounds for superconducting qubits and a millisecond or more for trapped ions). https://postquantum.com/quantum-computing/qec-classical-stack-infrastructure/
+13. Quantum Computing Report, *Quantinuum demonstrates 99.9995% logical memory fidelity on Helios trapped-ion processor* (neural decoders on GPUs). https://quantumcomputingreport.com/quantinuum-demonstrates-99-9995-logical-memory-fidelity-on-helios-trapped-ion-processor/
+14. Wu, Kolkowitz, Puri and Thompson, *Erasure conversion for fault-tolerant quantum computing in alkaline earth Rydberg atom arrays*, Nature Communications 13, 4657 (2022). https://arxiv.org/abs/2201.03540
+15. Jeff Geerling, *The Arduino Uno Q is a weird hybrid SBC* (power measurements). https://www.jeffgeerling.com/blog/2025/arduino-uno-q-weird-hybrid-sbc

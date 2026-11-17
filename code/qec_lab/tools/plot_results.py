@@ -52,9 +52,9 @@ col = lambda k: [float(rows[d][k]) for d in DS]
 base = [readout_baselines(d) for d in DS]
 series = [  # values, label, colour, linestyle, marker, width
     (col("majority"), "Majority vote", "#222222", ":", "o", 3.0),
-    (col("uf_weighted"), "Weighted union-find (STM32)", "#0b2a78", "-", "o", 4.5),
+    (col("uf_weighted"), "Weighted union-find, per-state weights (STM32)", "#0b2a78", "-", "o", 4.5),
     (col("pm_w_mixed"), "MWPM, mixed weights (PyMatching)", "#9a3b00", "--", "D", 3.0),
-    ([b[1] for b in base], "Naive Bayes on final data bits (no syndromes)", "#0f6b3a", "-", "P", 4.5),
+    ([b[1] for b in base], "Naive Bayes on final data bits (no syndromes)", "#0f6b3a", "-", "v", 4.5),
     ([b[0] for b in base], "Threshold on final data bits (no syndromes)", "#58b97f", "--", "s", 2.6),
     (col("ai"), "MLP: syndromes + final data bits (STM32)", "#7a0a50", "-", "^", 4.5),
 ]

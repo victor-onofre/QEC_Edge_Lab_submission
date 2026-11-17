@@ -6,7 +6,7 @@ interesting and most honest work one person can do with this hardware.
 ## 1. First, a correction to the headline AI claim
 
 A check on the saved shots (same 2-fold split as `qec_ai.cross_val`) shows that a **one-parameter rule that ignores
-every syndrome** does as well as, or better than, the neural network on ibm_fez. The rule: count the 1s in the final
+every syndrome** does as well as, or better than, the neural network on ibm_fez for d ≥ 5 (at d = 3 the network is still ahead). The rule: count the 1s in the final
 data readout and compare with a threshold chosen on the training half ("if enough 1s survived, it was a 1").
 
 Failures out of 4,000 shots:
@@ -27,7 +27,7 @@ What it means:
 
 - The "2–9.5× fewer errors than classical" ratio mostly measures a **missing prior** in the graph decoders (they are
   never told that a stored 1 decays and a stored 0 does not), not learning by the network.
-- On ibm_fez the network is **worse** than the trivial rule; its "error floor" at d ≥ 11 is a training weakness.
+- On ibm_fez, for d ≥ 5, the network is **worse** than the trivial rule; its "error floor" at d ≥ 11 is a training weakness.
 - On ibm_marrakesh the network beats the threshold rule, but a per-qubit naive-Bayes rule on the final bits gets most of
   the way there and matches it at d = 9. On that chip data qubit 0 (physical qubit 82), which is the logical observable,
   is nearly uninformative, so the comparison mostly measures how decoders cope with one dead qubit.
